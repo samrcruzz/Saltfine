@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.DS_Store
+
+# Thesis working files (not part of the app)
+docwork/
+docwork2/
+figures/
+*.bak
