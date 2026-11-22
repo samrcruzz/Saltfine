@@ -29,9 +29,16 @@ pool
     console.log(`✅ PostgreSQL connected successfully to ${process.env.PGDATABASE || 'saltfine_db'} on port ${process.env.PGPORT || 5432}!`)
     await initPostgresSchema()
   })
-  .catch(() => {
+  .catch((err: { code?: string; message?: string }) => {
     isPgConnected = false
-    console.log(`ℹ️ PostgreSQL not detected on port ${process.env.PGPORT || 5432}. Using high-speed in-memory store for seamless demo!`)
+    // Say WHY, so a wrong password or a missing database is not mistaken for "PostgreSQL is not installed"
+    const db = process.env.PGDATABASE || 'saltfine_db'
+    const reason =
+      err.code === '28P01' ? `wrong password for user "${process.env.PGUSER || 'postgres'}" (check PGPASSWORD in backend/.env)`
+      : err.code === '3D000' ? `database "${db}" does not exist yet (create it with createdb)`
+      : err.code === 'ECONNREFUSED' ? `nothing is listening on port ${process.env.PGPORT || 5432}`
+      : err.message || 'unknown error'
+    console.log(`ℹ️ PostgreSQL not connected: ${reason}. Using the in-memory store (records are lost when the server restarts).`)
   })
 
 // Auto-initialize schema in PostgreSQL if connected
