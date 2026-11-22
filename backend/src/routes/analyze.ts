@@ -96,12 +96,9 @@ function computeFallbackMetrics(fileName: string): PythonInferenceResult {
   if (roll < 0.65) {
     predicted_grade = 'Preprocessed Food Goods'
     impurity_pct = Number((0.06 + (hash % 13) / 100).toFixed(2)) // <= 0.20% Food Preprocessed
-  } else if (roll < 0.90) {
-    predicted_grade = 'Industrial Goods'
-    impurity_pct = Number((0.20 + (hash % 6) / 100).toFixed(2))  // 0.20% - 0.25% Industrial
   } else {
-    predicted_grade = 'Sub-Standard'
-    impurity_pct = Number((0.26 + (hash % 28) / 100).toFixed(2)) // > 0.25% Sub-Standard
+    predicted_grade = 'Industrial Goods'
+    impurity_pct = Number((0.20 + (hash % 6) / 100).toFixed(2)) // > 0.20% Industrial
   }
 
   const purity_pct = Number((100.0 - impurity_pct).toFixed(2))

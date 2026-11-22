@@ -35,7 +35,6 @@ interface BatchUploadState {
   isFinished: boolean
   foodGradeCount: number
   industrialCount: number
-  subStandardCount: number
 }
 
 // Tab 1: Live Classification Result & Real-Time Sorter Ingestion
@@ -87,12 +86,10 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
       isFinished: false,
       foodGradeCount: 0,
       industrialCount: 0,
-      subStandardCount: 0,
     })
 
     let foodCount = 0
     let indCount = 0
-    let subCount = 0
 
     for (let i = 0; i < total; i++) {
       if (cancelBatchRef.current) {
@@ -121,8 +118,7 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
           setOverrideRecord(res.record)
           const impPct = res.record.impurity_pct ?? Number((100 - (res.record.purity_pct ?? 99.88)).toFixed(2))
           if (impPct <= 0.20) foodCount++
-          else if (impPct <= 0.25) indCount++
-          else subCount++
+          else indCount++
         }
 
         // Brief delay so the user can see each step and live cards update smoothly
@@ -137,7 +133,6 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
               ...prev,
               foodGradeCount: foodCount,
               industrialCount: indCount,
-              subStandardCount: subCount,
             }
           : null
       )
@@ -284,10 +279,7 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
                 Food Preprocessed (≤0.20%): <strong className="font-mono text-emerald-400">{batchState.foodGradeCount}</strong>
               </span>
               <span>
-                Industrial (0.20–0.25%): <strong className="font-mono text-amber-400">{batchState.industrialCount}</strong>
-              </span>
-              <span>
-                Sub-Standard (&gt;0.25%): <strong className="font-mono text-rose-400">{batchState.subStandardCount}</strong>
+                Industrial (&gt;0.20%): <strong className="font-mono text-amber-400">{batchState.industrialCount}</strong>
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-emerald-400 font-medium">

@@ -99,7 +99,7 @@ export default function RecordsTable({ records, sort, onSort, onViewImage }: Rec
                 <GradeBadge grade={record.predicted_grade} />
               </td>
               <td className={`${td} text-right tabular-nums font-mono font-semibold ${
-                (record.impurity_pct ?? 0.12) <= 0.20 ? 'text-emerald-400' : (record.impurity_pct ?? 0.12) <= 0.25 ? 'text-amber-400' : 'text-rose-400'
+                (record.impurity_pct ?? 0.12) <= 0.20 ? 'text-emerald-400' : 'text-amber-400'
               }`}>
                 {(record.impurity_pct ?? (record.purity_pct ? Number((100 - record.purity_pct).toFixed(2)) : 0.12)).toFixed(2)}%
               </td>

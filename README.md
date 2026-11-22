@@ -15,8 +15,7 @@ SALTFINE is an industrial quality evaluation and sorting platform for sea salt. 
 | Insoluble Impurities | Quality Grade Tier | Standard Compliance & Visual Criteria | Automated Sorter Routing |
 | :--- | :--- | :--- | :--- |
 | **≤ 0.20%** | **Preprocessed Food Goods** | Food-Grade (Codex CXS 150 & RA 8172 compliant, max 0.20% insoluble matter) | **Food Bin** (Ejector 1) |
-| **0.20% - 0.25%** | **Industrial Goods** | Industrial-Grade (Chemical / non-food manufacturing applications) | **Industrial Bin** (Ejector 2) |
-| **> 0.25%** | **Sub-Standard** | Rejected (Exceeds acceptable insoluble limits; diverted to re-washing bin) | **Re-wash Bin** (Trapdoor 3) |
+| **> 0.20%** | **Industrial Goods** | Industrial-Grade (Chemical / non-food manufacturing applications) | **Industrial Bin** (Ejector 2) |
 
 ---
 

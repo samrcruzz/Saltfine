@@ -4,27 +4,23 @@ import { formatBatchId, formatConfidence } from '../../utils/format'
 import Card from '../ui/Card'
 import DataRow from '../ui/DataRow'
 
-// Three-tier quality indicator based on Impurities %
+// Two-tier quality indicator based on Impurities %
 function GradeIndicator({ grade, impurityPct }: { grade: PurityGrade | FinenessGrade; impurityPct: number }) {
-  let activeGrade: PurityGrade = 'Preprocessed Food Goods'
-  if (grade === 'Preprocessed Food Goods' || impurityPct <= 0.20) {
-    activeGrade = 'Preprocessed Food Goods'
-  } else if (grade === 'Industrial Goods' || (impurityPct > 0.20 && impurityPct <= 0.25)) {
-    activeGrade = 'Industrial Goods'
-  } else {
-    activeGrade = 'Sub-Standard'
-  }
+  const activeGrade: PurityGrade =
+    grade === 'Preprocessed Food Goods' || (grade !== 'Industrial Goods' && impurityPct <= 0.20)
+      ? 'Preprocessed Food Goods'
+      : 'Industrial Goods'
 
   return (
     <div
-      className="grid grid-cols-3 overflow-hidden rounded-lg border border-line"
+      className="grid grid-cols-2 overflow-hidden rounded-lg border border-line"
       role="img"
       aria-label={`Predicted quality tier: ${activeGrade} (${GRADE_META[activeGrade].range})`}
     >
       {PURITY_GRADES.map((item) => {
         const active = item === activeGrade
         const meta = GRADE_META[item]
-        const shortName = item === 'Preprocessed Food Goods' ? 'Food Preprocessed' : item === 'Industrial Goods' ? 'Industrial' : 'Sub-Standard'
+        const shortName = item === 'Preprocessed Food Goods' ? 'Food Preprocessed' : 'Industrial'
         return (
           <div
             key={item}
@@ -47,10 +43,9 @@ function GradeIndicator({ grade, impurityPct }: { grade: PurityGrade | FinenessG
 
 function ImpurityMeter({ impurityPct }: { impurityPct: number }) {
   const isFoodGrade = impurityPct <= 0.20
-  const isIndustrial = impurityPct > 0.20 && impurityPct <= 0.25
 
-  const barColor = isFoodGrade ? 'bg-emerald-500' : isIndustrial ? 'bg-amber-500' : 'bg-rose-500'
-  const textColor = isFoodGrade ? 'text-emerald-400' : isIndustrial ? 'text-amber-400' : 'text-rose-400'
+  const barColor = isFoodGrade ? 'bg-emerald-500' : 'bg-amber-500'
+  const textColor = isFoodGrade ? 'text-emerald-400' : 'text-amber-400'
 
   // Normalize scale for visualization: 0.0% to 0.50% range
   const visualPct = Math.min(100, Math.max(8, (impurityPct / 0.50) * 100))
@@ -63,9 +58,7 @@ function ImpurityMeter({ impurityPct }: { impurityPct: number }) {
           <span className="text-[0.72rem] text-ink-400">
             {isFoodGrade
               ? 'Food Preprocessed (Compliant: ≤ 0.20% Insoluble Matter)'
-              : isIndustrial
-              ? 'Industrial Grade (0.20% – 0.25% Impurities)'
-              : 'Sub-Standard / Rejected (> 0.25% Impurities)'}
+              : 'Industrial Grade (> 0.20% Impurities)'}
           </span>
         </div>
         <dd className={`text-[1.6rem] font-bold tabular-nums leading-none ${textColor}`}>
@@ -88,8 +81,7 @@ function ImpurityMeter({ impurityPct }: { impurityPct: number }) {
       <div className="mt-1.5 flex justify-between font-mono text-[0.65rem] text-ink-400">
         <span>0.00% (Pure)</span>
         <span className="text-emerald-400">0.20% (Food Limit)</span>
-        <span className="text-amber-400">0.25% (Industrial)</span>
-        <span className="text-rose-400">&gt;0.25% (Reject)</span>
+        <span className="text-amber-400">&gt;0.20% (Industrial)</span>
       </div>
     </div>
   )
@@ -112,9 +104,7 @@ export default function PredictedGradeCard({ record }: PredictedGradeCardProps) 
           <span className="font-semibold text-ink-900">
             {impurityPct <= 0.20
               ? 'Preprocessed Food Goods (≤ 0.20%)'
-              : impurityPct <= 0.25
-              ? 'Industrial Goods (0.20% – 0.25%)'
-              : 'Sub-Standard / Rejected (> 0.25%)'}
+              : 'Industrial Goods (> 0.20%)'}
           </span>
         </DataRow>
         <DataRow label="Confidence Score" mono>

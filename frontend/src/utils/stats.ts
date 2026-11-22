@@ -31,7 +31,6 @@ export function summarize(records: SaltRecord[]): SummaryResult {
   const groups: Record<string, { batches: number; massG: number; confidence: number; time: number }> = {
     'Preprocessed Food Goods': { batches: 0, massG: 0, confidence: 0, time: 0 },
     'Industrial Goods': { batches: 0, massG: 0, confidence: 0, time: 0 },
-    'Sub-Standard': { batches: 0, massG: 0, confidence: 0, time: 0 },
     Fine: { batches: 0, massG: 0, confidence: 0, time: 0 },
     Medium: { batches: 0, massG: 0, confidence: 0, time: 0 },
     Coarse: { batches: 0, massG: 0, confidence: 0, time: 0 },

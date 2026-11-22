@@ -5,29 +5,25 @@ import { formatNumber, gramsToKg } from '../../utils/format'
 import Card from '../ui/Card'
 import DataRow from '../ui/DataRow'
 
-// The three automated destination bins under the servo-actuated tipping plate
-function BinDiagram({ container, massG, purityPct }: { container: string; massG: number; purityPct: number }) {
+// The two automated destination bins under the servo-actuated tipping plate
+function BinDiagram({ container, massG, impurityPct }: { container: string; massG: number; impurityPct: number }) {
   const fillPercent = Math.min(100, Math.max(15, (massG / BIN_DISPLAY_CAPACITY_G) * 100))
 
-  let activeTier: PurityGrade = 'Preprocessed Food Goods'
-  if (container === 'Preprocessed Food Goods' || purityPct >= 95.0) {
-    activeTier = 'Preprocessed Food Goods'
-  } else if (container === 'Industrial Goods' || (purityPct >= 90.0 && purityPct < 95.0)) {
-    activeTier = 'Industrial Goods'
-  } else {
-    activeTier = 'Sub-Standard'
-  }
+  const activeTier: PurityGrade =
+    container === 'Preprocessed Food Goods' || (container !== 'Industrial Goods' && impurityPct <= 0.20)
+      ? 'Preprocessed Food Goods'
+      : 'Industrial Goods'
 
   return (
     <div
-      className="grid grid-cols-3 gap-3"
+      className="grid grid-cols-2 gap-3"
       role="img"
       aria-label={`Salt routed to the ${activeTier} container: ${massG.toFixed(1)} grams`}
     >
       {PURITY_GRADES.map((grade) => {
         const active = grade === activeTier
         const meta = GRADE_META[grade]
-        const shortName = grade === 'Preprocessed Food Goods' ? 'Food Bin' : grade === 'Industrial Goods' ? 'Industrial Bin' : 'Re-wash Bin'
+        const shortName = grade === 'Preprocessed Food Goods' ? 'Food Bin' : 'Industrial Bin'
         return (
           <div key={grade} className="text-center">
             <div className="grid h-5 place-items-center">
@@ -67,20 +63,18 @@ export interface SortingCardProps {
 }
 
 export default function SortingCard({ record }: SortingCardProps) {
-  const purityPct = record.purity_pct ?? 96.5
+  const impurityPct = record.impurity_pct ?? Number((100 - (record.purity_pct ?? 99.88)).toFixed(2))
   const destination =
-    purityPct >= 95.0
-      ? 'Bin 1: Preprocessed Food Goods (≥95%)'
-      : purityPct >= 90.0
-      ? 'Bin 2: Industrial Goods (90–95%)'
-      : 'Bin 3: Sub-Standard / Re-wash (<90%)'
+    impurityPct <= 0.20
+      ? 'Bin 1: Preprocessed Food Goods (≤ 0.20%)'
+      : 'Bin 2: Industrial Goods (> 0.20%)'
 
   return (
     <Card title="Automated Sorter Actuation">
       <BinDiagram
         container={String(record.container_grade)}
         massG={record.mass_g}
-        purityPct={purityPct}
+        impurityPct={impurityPct}
       />
 
       <dl className="mt-3 divide-y divide-line-soft">

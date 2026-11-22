@@ -1,6 +1,6 @@
 // Core domain types for SALTFINE sea salt purity & quality classification system.
 
-export type PurityGrade = 'Preprocessed Food Goods' | 'Industrial Goods' | 'Sub-Standard'
+export type PurityGrade = 'Preprocessed Food Goods' | 'Industrial Goods'
 export type FinenessGrade = PurityGrade | 'Fine' | 'Medium' | 'Coarse'
 
 export interface GradeMetaItem {
@@ -30,7 +30,7 @@ export interface SaltRecord {
   model_name: string
   predicted_grade: PurityGrade | FinenessGrade
   purity_pct: number              // e.g., 99.85% (100 - impurity_pct)
-  impurity_pct: number            // Key Metric: <= 0.20% Food Preprocessed, 0.20% - 0.25% Industrial, > 0.25% Sub-Standard
+  impurity_pct: number            // Key Metric: <= 0.20% Food Preprocessed, > 0.20% Industrial
   impurity_count: number          // Count of detected foreign/dark matter specks
   salt_crystal_count: number      // Count of clean salt crystals
   contamination_area_pct: number  // % of total area covered by impurities

@@ -19,18 +19,16 @@ export const PAGE_SIZE_OPTIONS = [10, 25, 50]
 // Visual capacity of one grade bin, used only to draw the fill level.
 export const BIN_DISPLAY_CAPACITY_G = 600
 
-// Quality and impurity classification tiers (Food Preprocessed <=0.20%, Industrial 0.20-0.25%, Sub-Standard >0.25%)
+// Quality and impurity classification tiers (Food Preprocessed <=0.20%, Industrial >0.20%)
 export const PURITY_GRADES: (PurityGrade)[] = [
   'Preprocessed Food Goods',
   'Industrial Goods',
-  'Sub-Standard',
 ]
 
 // The primary sorting grades across the application
 export const GRADES: (PurityGrade | FinenessGrade)[] = [
   'Preprocessed Food Goods',
   'Industrial Goods',
-  'Sub-Standard',
 ]
 
 // Visual metadata, colors, badges, and compliance tiers
@@ -48,7 +46,7 @@ export const GRADE_META: GradeMetaMap = {
     description: 'Food Grade · Direct Human Consumption (RA 8172 / Codex CXS 150)',
   },
   'Industrial Goods': {
-    range: '0.20%–0.25% Impurities',
+    range: '> 0.20% Impurities',
     color: '#f59e0b',
     colorOnDark: '#fbbf24',
     badge: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
@@ -58,18 +56,6 @@ export const GRADE_META: GradeMetaMap = {
     border: 'border-amber-500',
     ink: 'text-amber-400',
     description: 'Industrial Grade · Chemical, Water Treatment & De-icing',
-  },
-  'Sub-Standard': {
-    range: '> 0.25% Impurities',
-    color: '#ef4444',
-    colorOnDark: '#f87171',
-    badge: 'bg-rose-500/15 text-rose-400 border border-rose-500/30',
-    solid: 'bg-rose-600 text-white',
-    fill: 'bg-rose-500',
-    track: 'bg-rose-950/40',
-    border: 'border-rose-500',
-    ink: 'text-rose-400',
-    description: 'Rejected · Excessive Insoluble Matter (Requires Re-washing)',
   },
   Fine: {
     range: '0.20–0.99 mm',

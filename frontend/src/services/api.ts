@@ -140,12 +140,9 @@ export async function uploadImageFile(
     if (roll < 0.65) {
       grade = 'Preprocessed Food Goods'
       impurity_pct = Number((0.06 + (hash % 13) / 100).toFixed(2)) // <= 0.20%
-    } else if (roll < 0.90) {
-      grade = 'Industrial Goods'
-      impurity_pct = Number((0.20 + (hash % 6) / 100).toFixed(2))  // 0.20% - 0.25%
     } else {
-      grade = 'Sub-Standard'
-      impurity_pct = Number((0.26 + (hash % 28) / 100).toFixed(2)) // > 0.25%
+      grade = 'Industrial Goods'
+      impurity_pct = Number((0.20 + (hash % 6) / 100).toFixed(2)) // > 0.20%
     }
 
     const purity_pct = Number((100 - impurity_pct).toFixed(2))

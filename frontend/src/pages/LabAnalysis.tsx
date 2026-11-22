@@ -122,12 +122,9 @@ async function analyzeImagePixels(imageEl: HTMLImageElement, fileName: string): 
   if (roll < 0.65) {
     predictedGrade = 'Preprocessed Food Goods'
     impurityPct = Number((0.06 + (hash % 13) / 100).toFixed(2)) // <= 0.20% Food Preprocessed
-  } else if (roll < 0.90) {
-    predictedGrade = 'Industrial Goods'
-    impurityPct = Number((0.20 + (hash % 6) / 100).toFixed(2))  // 0.20% - 0.25% Industrial
   } else {
-    predictedGrade = 'Sub-Standard'
-    impurityPct = Number((0.26 + (hash % 28) / 100).toFixed(2)) // > 0.25% Sub-Standard
+    predictedGrade = 'Industrial Goods'
+    impurityPct = Number((0.20 + (hash % 6) / 100).toFixed(2)) // > 0.20% Industrial
   }
 
   const purityPct = Number((100 - impurityPct).toFixed(2))

@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
+import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { SaltRecord } from '../../types/saltfine'
 import Card from '../ui/Card'
 
@@ -14,7 +14,6 @@ export default function SizeFractionsCard({ record }: SizeFractionsCardProps) {
   const saltCount = record.salt_crystal_count ?? (record.particle_count - impurityCount)
 
   const isFoodGrade = impurityPct <= 0.20
-  const isIndustrial = impurityPct > 0.20 && impurityPct <= 0.25
 
   return (
     <Card title="Impurities & Particle Breakdown">
@@ -77,32 +76,24 @@ export default function SizeFractionsCard({ record }: SizeFractionsCardProps) {
           className={`flex items-center gap-2.5 rounded-lg border p-3 text-xs ${
             isFoodGrade
               ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-              : isIndustrial
-              ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-              : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+              : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
           }`}
         >
           {isFoodGrade ? (
             <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
-          ) : isIndustrial ? (
-            <AlertTriangle className="size-4 shrink-0 text-amber-400" />
           ) : (
-            <XCircle className="size-4 shrink-0 text-rose-400" />
+            <AlertTriangle className="size-4 shrink-0 text-amber-400" />
           )}
           <div>
             <div className="font-semibold">
               {isFoodGrade
                 ? 'Preprocessed Food Goods (≤ 0.20% Impurities)'
-                : isIndustrial
-                ? 'Industrial Goods (0.20% – 0.25% Impurities)'
-                : 'Sub-Standard Quality (> 0.25% Impurities)'}
+                : 'Industrial Goods (> 0.20% Impurities)'}
             </div>
             <div className="text-[0.72rem] opacity-85">
               {isFoodGrade
                 ? 'Meets Codex CXS 150 & RA 8172 food safety criteria (≤ 0.20% insoluble matter).'
-                : isIndustrial
-                ? 'Accepted for chemical electrolysis, water treatment, & industrial uses.'
-                : 'Excessive foreign matter. Diverted to re-washing bin.'}
+                : 'Accepted for chemical electrolysis, water treatment, & industrial uses.'}
             </div>
           </div>
         </div>

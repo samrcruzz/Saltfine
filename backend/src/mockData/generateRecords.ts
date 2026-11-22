@@ -10,8 +10,7 @@ const SUPPLIERS = ['Dasol Supplier A', 'Dasol Supplier B', 'Dasol Supplier C']
 // Share of batches per purity tier in the mock data set.
 const PURITY_WEIGHTS: Array<[PurityGrade, number]> = [
   ['Preprocessed Food Goods', 0.65],
-  ['Industrial Goods', 0.25],
-  ['Sub-Standard', 0.10],
+  ['Industrial Goods', 0.35],
 ]
 
 // Typical projected area (mm²) and equivalent-circle diameter (mm) of one
@@ -90,12 +89,9 @@ export function createRecordFactory(seed = 457): RecordFactory {
     if (roll < 0.65) {
       grade = 'Preprocessed Food Goods'
       impurityPct = round(0.06 + rand() * 0.13, 2) // <= 0.20% Food Preprocessed
-    } else if (roll < 0.90) {
-      grade = 'Industrial Goods'
-      impurityPct = round(0.20 + rand() * 0.05, 2) // 0.20% - 0.25% Industrial
     } else {
-      grade = 'Sub-Standard'
-      impurityPct = round(0.26 + rand() * 0.35, 2) // > 0.25% Sub-Standard
+      grade = 'Industrial Goods'
+      impurityPct = round(0.20 + rand() * 0.05, 2) // > 0.20% Industrial
     }
     const purityPct = round(100 - impurityPct, 2)
 

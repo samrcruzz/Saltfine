@@ -3,9 +3,8 @@
 SALTFINE Machine Learning Inference Pipeline
 Purity & Insoluble Impurities Quality Classifier
 Categorizes sea salt into:
-  - Preprocessed Food Goods (Purity >= 95.0%)
-  - Industrial Goods (Purity 90.0% - 94.9%)
-  - Sub-Standard (Purity < 90.0%)
+  - Preprocessed Food Goods (<= 0.20% insoluble impurities)
+  - Industrial Goods (> 0.20% insoluble impurities)
 """
 
 import sys
@@ -35,23 +34,17 @@ def analyze_salt_purity(image_path: str):
 
     # Impurity distribution based on optical sampling:
     # <= 0.20% -> Preprocessed Food Goods
-    # 0.20% - 0.25% -> Industrial Goods
-    # > 0.25% -> Sub-Standard
+    # > 0.20% -> Industrial Goods
     if roll < 0.65:
         # Preprocessed Food Goods (<= 0.20% Impurities)
         impurity_pct = round(0.06 + ((hash_val % 13) / 100.0), 2)
         predicted_grade = "Preprocessed Food Goods"
         confidence = round(0.92 + ((hash_val % 7) / 100.0), 4)
-    elif roll < 0.90:
-        # Industrial Goods (0.20% - 0.25% Impurities)
+    else:
+        # Industrial Goods (> 0.20% Impurities)
         impurity_pct = round(0.20 + ((hash_val % 6) / 100.0), 2)
         predicted_grade = "Industrial Goods"
         confidence = round(0.89 + ((hash_val % 8) / 100.0), 4)
-    else:
-        # Sub-Standard (> 0.25% Impurities)
-        impurity_pct = round(0.26 + ((hash_val % 28) / 100.0), 2)
-        predicted_grade = "Sub-Standard"
-        confidence = round(0.85 + ((hash_val % 12) / 100.0), 4)
 
     purity_pct = round(100.0 - impurity_pct, 2)
     impurity_count = max(1, int(total_particles * (impurity_pct / 100.0) * 14))
