@@ -101,6 +101,8 @@ export interface NavigationPage {
   status: string
   icon: React.ComponentType<{ className?: string }>
   component: React.ComponentType<{ onNavigate?: (id: string) => void }>
+  /** Who can open the page. Default: every signed-in user. */
+  minRole?: 'viewer' | 'dev'
 }
 
 export interface ReportStats {

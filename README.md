@@ -65,6 +65,27 @@ npm run dev
 ```
 *API runs on **http://localhost:5000** (auto-connects to PostgreSQL on port 5432 or uses in-memory store).*
 
+#### Sign-in accounts
+The dashboard asks for a sign-in. There are two roles:
+
+| Role | Can do |
+|------|--------|
+| `viewer` | See Live Result, Salt Records and Reports (and export reports) |
+| `dev` | Everything a viewer can, plus Lab & Image Analysis, uploading photos and triggering sorting cycles |
+
+Accounts are stored in `backend/data/users.json` (git-ignored, passwords hashed). Manage them from `backend/`:
+```bash
+npm run users -- add sam --role dev        # asks for the password (min. 8 characters)
+npm run users -- add ana --role viewer
+npm run users -- list
+npm run users -- passwd ana                # also signs ana out everywhere
+npm run users -- role ana dev
+npm run users -- remove ana
+```
+Set `AUTH_SECRET` in `backend/.env` (see `.env.example`) so people stay signed in across server restarts.
+Open the dashboard at `http://localhost:5173` (not `127.0.0.1`), the same host name as the API, so the sign-in cookie is sent.
+Without `VITE_API_BASE_URL` (mock mode) there is no backend, so there is no sign-in either.
+
 ### 3. Start Frontend Dashboard
 ```bash
 cd frontend

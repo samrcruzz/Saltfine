@@ -24,6 +24,7 @@ export const PAGES: NavigationPage[] = [
     status: 'Analysis engine ready',
     icon: FlaskConical,
     component: LabAnalysis,
+    minRole: 'dev',
   },
   {
     id: 'records',

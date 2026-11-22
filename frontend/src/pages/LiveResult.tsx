@@ -7,6 +7,7 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react'
+import { useAuth } from '../auth/AuthProvider'
 import BatchStrip from '../components/live/BatchStrip'
 import CapturedImageCard from '../components/live/CapturedImageCard'
 import ParticleCard from '../components/live/ParticleCard'
@@ -40,6 +41,7 @@ interface BatchUploadState {
 // Tab 1: Live Classification Result & Real-Time Sorter Ingestion
 export default function LiveResult({ onNavigate }: LiveResultProps) {
   const showToast = useToast()
+  const canRun = useAuth().can('dev') // uploading and triggering cycles is dev-only
   const [triggering, setTriggering] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const cancelBatchRef = useRef(false)
@@ -62,9 +64,9 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
     try {
       const newRec = await triggerNewCycle()
       setOverrideRecord(newRec)
-      showToast(`Batch B-${String(newRec.batch_id).padStart(4, '0')} sorting completed!`)
-    } catch {
-      showToast('Could not trigger batch cycle', { tone: 'error' })
+      showToast(`Batch B-${String(newRec.batch_id).padStart(4, '0')} analyzed by the model: ${newRec.impurity_count} impurities`)
+    } catch (err) {
+      showToast((err as Error).message || 'Could not trigger batch cycle', { tone: 'error' })
     } finally {
       setTriggering(false)
     }
@@ -153,7 +155,7 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
         <div className="text-xs font-medium uppercase tracking-wider text-ink-500">
           Telemetry & Sorter Feed
         </div>
-        <div className="flex items-center gap-2">
+        {canRun && (<div className="flex items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -180,7 +182,7 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
           >
             {triggering ? 'Crushing & Imaging…' : 'Trigger Cycle Now'}
           </Button>
-        </div>
+        </div>)}
       </div>
 
       {/* Batch Processing Indicator Card with 1/50 counter & auto-save to Salt Records */}
@@ -298,7 +300,9 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
           <ErrorState error={latest.error} />
         ) : (
           <EmptyState title="No batches classified yet">
-            Upload a batch of images above or trigger a cycle to start classification.
+            {canRun
+              ? 'Upload a batch of images above or trigger a cycle to start classification.'
+              : 'Results appear here as soon as a dev runs a sorting cycle.'}
           </EmptyState>
         )
       ) : (

@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
-import { Pause, Play } from 'lucide-react'
+import { LogOut, Pause, Play, UserRound } from 'lucide-react'
+import { useAuth } from '../../auth/AuthProvider'
 import { useNow } from '../../hooks/useNow'
+import { AUTH_ENABLED, ROLE_LABEL } from '../../services/auth'
 import { simulation } from '../../mockData/mockStore'
 import { USE_MOCK } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
@@ -51,6 +53,30 @@ function FeedStatus({ connectedLabel }: { connectedLabel: string }) {
   )
 }
 
+function UserMenu() {
+  const { user, signOut } = useAuth()
+  if (!AUTH_ENABLED || !user) return null
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="inline-flex items-center gap-1.5 text-sm text-ink-700">
+        <UserRound className="size-4 text-ink-400" aria-hidden="true" />
+        {user.username}
+        <span className="rounded bg-canvas px-1.5 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wider text-ink-500">
+          {ROLE_LABEL[user.role]}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={signOut}
+        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line bg-panel px-2.5 text-[0.8rem] font-semibold text-ink-700 hover:bg-canvas"
+      >
+        <LogOut className="size-3.5" aria-hidden="true" />
+        Sign out
+      </button>
+    </div>
+  )
+}
+
 export interface HeaderProps {
   title: string
   connectedLabel: string
@@ -64,6 +90,7 @@ export default function Header({ title, connectedLabel }: HeaderProps) {
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <FeedStatus connectedLabel={connectedLabel} />
           <Clock />
+          <UserMenu />
         </div>
       </div>
     </header>

@@ -3,6 +3,7 @@
 import { mockDb, simulation } from '../mockData/mockStore'
 import type { FilterState, FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
 import { EMPTY_FILTERS } from '../utils/filters'
+import { notifyUnauthorized } from './auth'
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
 
@@ -40,10 +41,37 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     method,
     headers,
     body: bodyPayload,
+    credentials: 'include', // session cookie
   })
 
-  if (!response.ok) throw new Error(`Request failed (${response.status}) for ${path}`)
+  if (response.status === 401) notifyUnauthorized()
+  if (!response.ok) throw new Error(await errorMessage(response, path))
   return response.json()
+}
+
+// Prefer the backend's own message (e.g. "No new photo in the camera inbox ...")
+async function errorMessage(response: Response, path: string): Promise<string> {
+  try {
+    const body = await response.json()
+    if (body?.error) return String(body.error)
+  } catch {
+    /* not JSON */
+  }
+  return `Request failed (${response.status}) for ${path}`
+}
+
+// Absolute URL for a backend path like /api/images/x.jpg (null in mock mode)
+export function apiUrl(pathOrUrl: string | null | undefined): string | null {
+  if (!pathOrUrl) return null
+  if (/^(https?:|blob:|data:)/.test(pathOrUrl)) return pathOrUrl
+  if (BASE_URL && pathOrUrl.startsWith('/api/')) return `${BASE_URL}${pathOrUrl}`
+  return null
+}
+
+// The model's red/green copy is saved as <name>_highlighted.<ext> next to the original upload
+export function originalOf(highlightedPath: string): string | null {
+  const m = highlightedPath.match(/^(.*)_highlighted(\.[a-z0-9]+)$/i)
+  return m ? `${m[1]}${m[2]}` : null
 }
 
 // Most recent sorting cycle, or null when the database is empty.
@@ -103,12 +131,19 @@ export interface UploadResult {
   fileName: string
   fileSize: string
   fileUrl: string
+  /** YOLOv8 red (impurity) / green (salt) highlighted copy; equals fileUrl when no model ran */
+  annotatedFileUrl?: string
   storedFilename?: string
   record?: SaltRecord
   model_name: string
+  /** 'yolov8' when the trained model produced the result */
+  model_source?: string
+  /** false = a fallback (not the YOLOv8 model) produced these numbers */
+  is_model_result?: boolean
   predicted_grade: FinenessGrade | PurityGrade
   quality_tier?: PurityGrade
   purity_pct?: number
+  impurity_pct?: number
   impurity_count?: number
   salt_crystal_count?: number
   contamination_area_pct?: number
@@ -226,7 +261,9 @@ export async function uploadImageFile(
   const response = await fetch(`${BASE_URL}/api/analyze/upload`, {
     method: 'POST',
     body: formData,
+    credentials: 'include', // session cookie
   })
-  if (!response.ok) throw new Error(`Upload failed (${response.status})`)
+  if (response.status === 401) notifyUnauthorized()
+  if (!response.ok) throw new Error(await errorMessage(response, "/api/analyze/upload"))
   return response.json()
 }
