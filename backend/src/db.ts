@@ -15,9 +15,11 @@ export const pool = new Pool({
 
 let isPgConnected = false
 
-// In-memory persistent database seeded with realistic records
+// In-memory store. Starts EMPTY so every record comes from a real photo + the YOLOv8 model.
+// Set SEED_DEMO_DATA=true in backend/.env to pre-fill it with simulated demo records.
 const recordFactory = createRecordFactory()
-let localRecords: SaltRecord[] = seedHistory(recordFactory)
+export const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA === 'true'
+let localRecords: SaltRecord[] = SEED_DEMO_DATA ? seedHistory(recordFactory) : []
 
 // Test PostgreSQL connection and initialize schema
 pool
