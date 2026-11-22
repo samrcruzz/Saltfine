@@ -13,16 +13,21 @@ torchvision>=0.17.0
 # Roboflow: red/green highlighting (Supervision) + dataset upload/download
 supervision>=0.25.0
 python-dotenv>=1.0.0
-# roboflow pulls pillow-avif-plugin, which has no wheel for Python 3.15 yet. If it fails:
+# roboflow is only needed for roboflow_dataset.py (dataset sync), not for the website.
+# It pulls pillow-avif-plugin, which has no wheel for Python 3.15 yet, so it is skipped there.
+# On Python 3.15, if you need the Roboflow sync, install it without that dependency:
 #   pip install --no-deps roboflow && pip install requests-toolbelt filetype tqdm python-dateutil
-roboflow>=1.1.0
+roboflow>=1.1.0; python_version < "3.15"
 
-# Export (YOLO -> ONNX) and lightweight ONNX inference on edge devices
+# Export (YOLO -> ONNX) and lightweight ONNX inference on edge devices.
+# onnxruntime is not used by the website or the export; it has no wheel for Python 3.15 yet.
 onnx>=1.15.0
-onnxruntime>=1.15.0
+onnxruntime>=1.15.0; python_version < "3.15"
 
 # Image processing / numerics
-numpy>=1.24.0
+# numpy 2.5.5: Windows Smart App Control blocks its numpy.random DLL ("An Application Control
+# policy has blocked this file"), which breaks supervision and scikit-learn. 2.5.4 works.
+numpy>=1.24.0,!=2.5.5
 Pillow>=9.5.0
 opencv-python>=4.8.0
 PyYAML>=6.0
