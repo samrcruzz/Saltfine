@@ -16,6 +16,44 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
 RF_MODEL_PATH = MODELS_DIR / "salt_impurity_rf.joblib"
+YOLO_WEIGHTS = MODELS_DIR / "saltfine_yolov8.pt"
+FOOD_GRADE_MAX_IMPURITY_PCT = 0.20
+
+
+def analyze_with_yolo(image_path: str):
+    """YOLOv8 detection + red/green highlight. Returns None if unavailable,
+    so the caller falls back to the legacy pipeline."""
+    if not YOLO_WEIGHTS.exists():
+        return None
+    try:
+        import contextlib
+
+        # Keep stdout clean: the backend parses it as a single JSON object.
+        with contextlib.redirect_stdout(sys.stderr):
+            from highlight import highlight_file, load_model
+
+            src = Path(image_path)
+            dst = src.with_name(f"{src.stem}_highlighted{src.suffix or '.jpg'}")
+            r = highlight_file(src, dst, load_model(YOLO_WEIGHTS))
+    except Exception as exc:  # missing deps, unreadable image, bad weights...
+        print(f"[predict] YOLOv8 unavailable, falling back: {exc}", file=sys.stderr)
+        return None
+
+    impurity_pct = round(r.impurity_area_pct, 2)
+    grade = "Preprocessed Food Goods" if impurity_pct <= FOOD_GRADE_MAX_IMPURITY_PCT else "Industrial Goods"
+    return {
+        "predicted_grade": grade,
+        "quality_tier": grade,
+        "purity_pct": round(100.0 - impurity_pct, 2),
+        "impurity_pct": impurity_pct,
+        "impurity_count": r.impurity_count,
+        "salt_crystal_count": r.salt_count,
+        "total_particles": r.total,
+        "contamination_area_pct": impurity_pct,
+        "confidence": round(r.mean_confidence, 4),
+        "model_source": "yolov8",
+        "annotated_image": dst.name,
+    }
 
 def analyze_salt_purity(image_path: str):
     """
@@ -75,11 +113,14 @@ def main():
         sys.exit(1)
 
     start_time = time.perf_counter()
-    result = analyze_salt_purity(image_path)
+    result = analyze_with_yolo(image_path) or analyze_salt_purity(image_path)
     elapsed_ms = round((time.perf_counter() - start_time) * 1000, 1)
 
+    is_yolo = result["model_source"] == "yolov8"
     output = {
-        "model_name": "SALTFINE Impurity Detector (Random Forest + CV)",
+        "model_name": "SALTFINE YOLOv8 Impurity Detector" if is_yolo
+        else "SALTFINE Impurity Detector (Random Forest + CV)",
+        "annotated_image": result.get("annotated_image"),
         "model_source": result["model_source"],
         "predicted_grade": result["predicted_grade"],
         "quality_tier": result["quality_tier"],
