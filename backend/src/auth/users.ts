@@ -4,6 +4,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import { hashPassword, MIN_PASSWORD_LENGTH } from './passwords'
 
 export type Role = 'viewer' | 'dev'
@@ -22,8 +23,19 @@ export function usersFile(): string {
   return process.env.SALTFINE_USERS_FILE || path.resolve(process.cwd(), 'data', 'users.json')
 }
 
+// Pre-existing accounts (password hashes only), committed so a fresh clone can sign in right away.
+// Copied to data/users.json the first time it is missing; after that, data/users.json is the source of truth.
+export const SEED_USERS_FILE = fileURLToPath(new URL('../../seed/users.json', import.meta.url))
+
+function seedUsersFileIfMissing(file: string): void {
+  if (process.env.SALTFINE_USERS_FILE || fs.existsSync(file) || !fs.existsSync(SEED_USERS_FILE)) return
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.copyFileSync(SEED_USERS_FILE, file)
+}
+
 export function loadUsers(): StoredUser[] {
   const file = usersFile()
+  seedUsersFileIfMissing(file)
   if (!fs.existsSync(file)) return []
   const data = JSON.parse(fs.readFileSync(file, 'utf8'))
   return Array.isArray(data.users) ? data.users : []

@@ -73,7 +73,19 @@ The dashboard asks for a sign-in. There are two roles:
 | `viewer` | See Live Result, Salt Records and Reports (and export reports) |
 | `dev` | Everything a viewer can, plus Lab & Image Analysis, uploading photos and triggering sorting cycles |
 
-Accounts are stored in `backend/data/users.json` (git-ignored, passwords hashed). Manage them from `backend/`:
+Accounts are stored in `backend/data/users.json` (git-ignored, passwords hashed). On a fresh clone that file is
+created on first start from `backend/seed/users.json`, so these accounts already exist:
+
+| Username | Role |
+|----------|------|
+| `sam` | `dev` |
+| `ana` | `viewer` |
+
+Ask the project owner for their passwords, and change them with `npm run users -- passwd <name>` after setup.
+Changes made with the CLI only touch `data/users.json`; to change the pre-existing accounts for everyone, copy it
+over `backend/seed/users.json` and commit.
+
+Manage accounts from `backend/`:
 ```bash
 npm run users -- add sam --role dev        # asks for the password (min. 8 characters)
 npm run users -- add ana --role viewer

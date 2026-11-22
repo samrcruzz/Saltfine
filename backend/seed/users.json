@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "username": "sam",
+      "role": "dev",
+      "passwordHash": "scrypt$gV9w6nac2VC90cp2_XwQRw$h_brOBIPM-H9dwcEJu2U5_qkdaAWIwilZ5AoyDqAL1njW11vWNCpecQNVIvNlJj04C6iyK5jVKYC-Z80yANRGA",
+      "createdAt": "2026-11-22T08:01:52.710Z"
+    },
+    {
+      "username": "ana",
+      "role": "viewer",
+      "passwordHash": "scrypt$3sXEAZnZg1p-8pGZ-jB6fA$NyncAiLYGCSsTh127L5Ov-l4p5bU9tb1TzWCYONaJfy19B8-W8gur6ESjoXQ5-qzNkfpfZG87RFwNmMwOGHo1w",
+      "createdAt": "2026-11-22T08:02:16.052Z"
+    }
+  ]
+}
