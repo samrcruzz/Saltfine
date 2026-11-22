@@ -60,3 +60,6 @@ figures/
 
 # Sign-in accounts (password hashes)
 backend/data/
+
+# Personal presentation notes (kept local, not uploaded)
+docs/presentation-script.md
