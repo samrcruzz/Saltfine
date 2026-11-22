@@ -1,0 +1,15 @@
+{
+  "_note": "Registry of labelled photo batches for ml_service/pipeline.py. Paths are relative to the repo root. 'holdout' photos (and every augmented image made from them) are ALWAYS validation, never training, so model versions stay comparable.",
+  "holdout": [
+    "IMG_0688"
+  ],
+  "batches": {
+    "batch-1": {
+      "originals": "dataset/test/originals",
+      "images": "dataset/test/jpg",
+      "labels": "dataset/test/prelabels/labels",
+      "impurities": "dataset/test/impurities_manual.json",
+      "augmented": "dataset/augmented"
+    }
+  }
+}

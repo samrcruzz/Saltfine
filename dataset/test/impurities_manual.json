@@ -1,0 +1,20 @@
+{
+  "_note": "Hand-checked impurity boxes [x1, y1, x2, y2] in pixels at 2016 px width (half of the 4032 px photos). Used by ml_service/prelabel.py --impurities.",
+  "_uncertain": {
+    "_note": "Spots that MIGHT be impurities (tiny specks, glassy grey particle). Not labelled; augment_dataset.py keeps them out of pure-salt crops.",
+    "IMG_0686": [[1840, 695, 1870, 725]],
+    "IMG_0687": [[525, 268, 555, 298], [925, 1012, 952, 1040]],
+    "IMG_0688": [[760, 1090, 800, 1134], [1790, 635, 1820, 665]],
+    "IMG_0689": [[1545, 540, 1640, 625], [535, 1090, 580, 1134], [1790, 955, 1820, 985]]
+  },
+  "_no_paste": {
+    "_note": "Real impurities whose cut-out mask is poor (holes / blurry / truncated). Still labelled; augment_dataset.py just won't copy-paste them.",
+    "IMG_0689": [[1393, 641, 1457, 727]],
+    "IMG_0690": [[33, 1043, 97, 1087], [1843, 1073, 1907, 1127]]
+  },
+  "IMG_0686": [[1325, 78, 1382, 122], [948, 443, 1058, 572], [573, 743, 672, 837], [1157, 261, 1176, 279]],
+  "IMG_0687": [[1296, 40, 1394, 156], [336, 303, 442, 442], [193, 993, 307, 1070]],
+  "IMG_0688": [[873, 220, 974, 332], [478, 850, 542, 922]],
+  "IMG_0689": [[876, 226, 937, 307], [1393, 641, 1457, 727], [298, 830, 410, 922]],
+  "IMG_0690": [[0, 673, 92, 742], [1788, 466, 1902, 527], [773, 920, 847, 978], [778, 980, 845, 1022], [608, 3, 662, 37], [1028, 0, 1087, 47], [33, 1043, 97, 1087], [1843, 1073, 1907, 1127]]
+}
