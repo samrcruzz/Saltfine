@@ -1,4 +1,4 @@
-import { APP_NAME, GRADE_META, GRADES } from '../../config'
+import { APP_NAME, DASHBOARD_TAGLINE, GRADE_META, GRADES } from '../../config'
 import type { NavigationPage } from '../../types/saltfine'
 
 export interface SidebarProps {
@@ -12,9 +12,7 @@ export default function Sidebar({ pages, activeId }: SidebarProps) {
       <div className="px-6 pb-7 pt-7">
         <div className="text-[1.6rem] font-bold leading-none tracking-[0.09em]">{APP_NAME}</div>
         <p className="mt-2.5 text-[0.8rem] leading-snug text-navy-300">
-          Sea Salt Fineness
-          <br />
-          Classification System
+          {DASHBOARD_TAGLINE}
         </p>
       </div>
 

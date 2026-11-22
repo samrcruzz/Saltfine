@@ -1,4 +1,4 @@
-import { APP_NAME, APP_TAGLINE } from '../../config'
+import { APP_NAME, DASHBOARD_TAGLINE } from '../../config'
 import type { NavigationPage } from '../../types/saltfine'
 
 export interface TopNavProps {
@@ -11,7 +11,7 @@ export default function TopNav({ pages, activeId }: TopNavProps) {
     <div className="sticky top-0 z-30 bg-navy-900 text-white xl:hidden">
       <div className="flex items-baseline gap-3 px-4 pt-3 sm:px-5 lg:px-8">
         <span className="text-lg font-bold tracking-[0.09em]">{APP_NAME}</span>
-        <span className="hidden text-xs text-navy-300 sm:inline">{APP_TAGLINE}</span>
+        <span className="hidden text-xs text-navy-300 sm:inline">{DASHBOARD_TAGLINE}</span>
       </div>
 
       <nav aria-label="Main" className="mt-1.5 flex gap-1 overflow-x-auto px-2 sm:px-3 lg:px-6">

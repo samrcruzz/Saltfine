@@ -4,6 +4,8 @@ import type { FinenessGrade, GradeMetaMap, PurityGrade } from './types/saltfine'
 
 export const APP_NAME = 'SALTFINE'
 export const APP_TAGLINE = 'Sea Salt Fineness Classification System'
+// Shown under the name in the dashboard sidebar and top bar (the sign-in page keeps APP_TAGLINE).
+export const DASHBOARD_TAGLINE = 'User Dashboard'
 
 // How often the dashboard asks the backend for the newest result (ms).
 export const LIVE_POLL_INTERVAL_MS = 2000
