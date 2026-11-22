@@ -37,6 +37,7 @@ uploads/*
 !uploads/.gitkeep
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/camera_inbox/
 dataset/train/*/*.jpg
 dataset/train/*/*.jpeg
 dataset/train/*/*.png
@@ -48,6 +49,14 @@ dataset/val/*/*.png
 ml_service/models/*.onnx
 ml_service/models/*.pt
 ml_service/models/*.pth
+ml_service/datasets/
+ml_service/runs/
+yolov8*.pt
+yolo11*.pt
+yolo26*.pt
 docwork/
 docwork2/
 figures/
+
+# Sign-in accounts (password hashes)
+backend/data/

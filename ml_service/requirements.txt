@@ -1,5 +1,32 @@
 # SALTFINE Machine Learning & Computer Vision Dependencies
+#
+# GPU (NVIDIA/CUDA) users: install PyTorch from the CUDA index FIRST, then this file:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#   pip install -r requirements.txt
+# CPU-only / Raspberry Pi: just `pip install -r requirements.txt`.
+
+# YOLOv8 training & inference
+ultralytics>=8.3.0
+torch>=2.2.0
+torchvision>=0.17.0
+
+# Roboflow: red/green highlighting (Supervision) + dataset upload/download
+supervision>=0.25.0
+python-dotenv>=1.0.0
+# roboflow pulls pillow-avif-plugin, which has no wheel for Python 3.15 yet. If it fails:
+#   pip install --no-deps roboflow && pip install requests-toolbelt filetype tqdm python-dateutil
+roboflow>=1.1.0
+
+# Export (YOLO -> ONNX) and lightweight ONNX inference on edge devices
+onnx>=1.15.0
+onnxruntime>=1.15.0
+
+# Image processing / numerics
 numpy>=1.24.0
 Pillow>=9.5.0
-onnxruntime>=1.15.0
 opencv-python>=4.8.0
+PyYAML>=6.0
+
+# Legacy Random Forest trainer (train_impurity_detector.py)
+scikit-learn>=1.3.0
+joblib>=1.3.0

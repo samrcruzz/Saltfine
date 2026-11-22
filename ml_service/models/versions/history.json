@@ -1,0 +1,9 @@
+[
+  {
+    "version": "v1",
+    "file": "ml_service/models/versions/saltfine_yolov8_v1.pt",
+    "sha": "ebd4311cf7107749",
+    "archived": "2026-11-22T13:59:05",
+    "note": "live model before fine-tune"
+  }
+]

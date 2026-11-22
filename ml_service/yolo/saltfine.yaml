@@ -1,0 +1,16 @@
+# SALTFINE YOLOv8 dataset config (Ultralytics format)
+#
+# Expected layout (paths relative to `path`):
+#   images/train/*.jpg   labels/train/*.txt
+#   images/val/*.jpg     labels/val/*.txt
+# Each label line: <class_id> <x_center> <y_center> <width> <height>  (normalized 0-1)
+#
+# Label with any YOLO-format tool (Roboflow, CVAT, Label Studio, labelImg).
+
+path: ../datasets/saltfine
+train: images/train
+val: images/val
+
+names:
+  0: salt_crystal
+  1: impurity
