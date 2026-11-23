@@ -49,6 +49,8 @@ dataset/val/*/*.png
 ml_service/models/*.onnx
 ml_service/models/*.pt
 ml_service/models/*.pth
+# ...except the live YOLOv8 model the website loads (6.5 MB), so a fresh clone can scan photos
+!ml_service/models/saltfine_yolov8.pt
 ml_service/datasets/
 ml_service/runs/
 yolov8*.pt
