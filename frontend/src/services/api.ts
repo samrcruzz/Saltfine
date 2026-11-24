@@ -49,6 +49,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return response.json()
 }
 
+export interface ServerHealth {
+  /** 'postgresql' = records are saved; 'memory' = PostgreSQL is not connected (records are lost on restart) */
+  database?: 'postgresql' | 'memory'
+}
+
+/** Backend health, for the status in the page header. Throws when the server cannot be reached. */
+export async function getHealth(): Promise<ServerHealth> {
+  return request<ServerHealth>('/api/health')
+}
+
 // Prefer the backend's own message (e.g. "No new photo in the camera inbox ...")
 async function errorMessage(response: Response, path: string): Promise<string> {
   try {

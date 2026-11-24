@@ -74,9 +74,15 @@ export default function SaltRecordLog() {
     body = <ErrorState error={error} compact />
   } else if (total === 0) {
     body = (
-      <EmptyState title="No records match these filters" compact>
-        Try a wider date range, another grade, or clear the search text.
-      </EmptyState>
+      hasActiveFilters(applied) ? (
+        <EmptyState title="No records match these filters" compact>
+          Try a wider date range, another grade, or clear the search text.
+        </EmptyState>
+      ) : (
+        <EmptyState title="No records yet" compact>
+          Analyze salt photos in Lab Analysis or Live Result, and the results are saved here.
+        </EmptyState>
+      )
     )
   } else {
     body = <RecordsTable records={visible} sort={sort} onSort={changeSort} onViewImage={setSelected} />

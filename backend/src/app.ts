@@ -6,6 +6,7 @@ import authRouter from './routes/auth'
 import recordsRouter from './routes/records'
 import analyzeRouter from './routes/analyze'
 import cycleRouter from './routes/cycle'
+import { dbService } from './db'
 
 // Who may do what:
 //   viewer  sign in, see live results, records, reports and images
@@ -31,6 +32,8 @@ export function createApp() {
       status: 'online',
       system: 'SALTURE Automated Sea Salt Fineness Sorter',
       version: '1.0.0-ts',
+      // 'postgresql' = records are saved; 'memory' = PostgreSQL is not connected, records are lost on restart
+      database: dbService.isPostgres() ? 'postgresql' : 'memory',
       timestamp: new Date().toISOString(),
     })
   })

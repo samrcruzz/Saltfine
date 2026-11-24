@@ -40,10 +40,10 @@ export default function Sidebar({ pages, activeId }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Reference: the particle-size range behind each grade. */}
+      {/* Reference: the impurity range behind each quality grade. */}
       <div className="border-t border-white/10 px-6 py-5">
         <h2 className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-navy-300">
-          Fineness grades
+          Quality grades
         </h2>
         <ul className="mt-3 space-y-2 text-sm">
           {GRADES.map((grade) => (

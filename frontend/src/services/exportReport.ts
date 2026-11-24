@@ -20,7 +20,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 function reportFilename({ from, to, grade }: FilterState, extension: string): string {
   const period = from || to ? `${from || 'start'}_to_${to || formatDate(new Date())}` : 'all-records'
   const gradePart = grade && grade !== 'All' ? `_${grade.toLowerCase()}` : ''
-  return `saltfine-report_${period}${gradePart}.${extension}`
+  return `salture-report_${period}${gradePart}.${extension}`
 }
 
 type ValueExtractor = (r: SaltRecord) => string | number
@@ -98,7 +98,7 @@ export async function downloadReportPdf({
   const gradeLabel = filters.grade && filters.grade !== 'All' ? filters.grade : 'All grades'
   doc.setTextColor(22, 32, 44)
   doc.text(`Period: ${describePeriod(filters)}`, margin, 92)
-  doc.text(`Fineness grade: ${gradeLabel}`, margin, 106)
+  doc.text(`Quality grade: ${gradeLabel}`, margin, 106)
   doc.text(`Generated: ${formatDateTime(generatedAt)}`, margin, 120)
 
   autoTable(doc, {
@@ -125,7 +125,7 @@ export async function downloadReportPdf({
     startY: lastY + 20,
     margin: { left: margin, right: margin },
     theme: 'striped',
-    head: [['Grade', 'Size range', 'Batches', 'Share', 'Sorted mass', 'Avg. conf.']],
+    head: [['Grade', 'Impurity range', 'Batches', 'Share', 'Sorted mass', 'Avg. conf.']],
     body: summary.perGrade.map((row) => [
       row.grade,
       GRADE_META[row.grade as FinenessGrade].range,

@@ -14,7 +14,7 @@ export interface GradeSummaryTableProps {
 
 export default function GradeSummaryTable({ summary }: GradeSummaryTableProps) {
   return (
-    <Card title="Summary per fineness grade">
+    <Card title="Summary per quality grade">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse">
           <thead>
@@ -23,7 +23,7 @@ export default function GradeSummaryTable({ summary }: GradeSummaryTableProps) {
                 Grade
               </th>
               <th scope="col" className={`${th} text-left`}>
-                Size range
+                Impurity range
               </th>
               <th scope="col" className={`${th} text-right`}>
                 Batches

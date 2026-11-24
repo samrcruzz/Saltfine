@@ -31,14 +31,15 @@ export default function SizeFractionsCard({ record }: SizeFractionsCardProps) {
             </span>
           </div>
           <div className="flex h-3 w-full overflow-hidden rounded-full bg-navy-950 border border-line">
+            {/* True proportions; the impurity part keeps a thin minimum so a tiny share stays visible */}
             <div
               className="bg-emerald-500 transition-all duration-500"
-              style={{ width: `${Math.max(50, purityPct)}%` }}
+              style={{ flexBasis: `${purityPct}%` }}
               title={`Pure Salt: ${purityPct}%`}
             />
             <div
-              className="bg-rose-500 transition-all duration-500"
-              style={{ width: `${Math.min(50, Math.max(8, (impurityPct / 0.50) * 50))}%` }}
+              className="shrink-0 bg-rose-500 transition-all duration-500"
+              style={{ width: impurityPct > 0 ? `max(4px, ${impurityPct}%)` : 0 }}
               title={`Impurities: ${impurityPct}%`}
             />
           </div>

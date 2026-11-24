@@ -74,12 +74,12 @@ export default function Reports() {
 
         <div className="grid gap-5 lg:grid-cols-2">
           <GradeBarChart<GradeStatSummary>
-            title="Batches per fineness grade"
+            title="Batches per quality grade"
             data={summary.perGrade}
             dataKey="batches"
             formatValue={(value) => formatNumber(value as number)}
             renderDetail={(row) => `${formatNumber(row.batches)} batches · ${formatPercent(row.sharePct)} of total`}
-            summary={`Batches per fineness grade: ${summary.perGrade
+            summary={`Batches per quality grade: ${summary.perGrade
               .map((row) => `${row.grade} ${row.batches}`)
               .join(', ')}.`}
           />

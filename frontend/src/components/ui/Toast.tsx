@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 className={`mt-0.5 size-4 shrink-0 ${toast.tone === 'error' ? 'text-amber-300' : 'text-brine-500'}`}
                 aria-hidden="true"
               />
-              <span>{toast.message}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{toast.message}</span>
             </div>
           )
         })}

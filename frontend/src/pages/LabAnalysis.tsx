@@ -21,7 +21,7 @@ import Card from '../components/ui/Card'
 import DataRow from '../components/ui/DataRow'
 import GradeBadge from '../components/ui/GradeBadge'
 import { useToast } from '../components/ui/Toast'
-import { GRADE_META, GRADES } from '../config'
+import { GRADE_META } from '../config'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { apiUrl, saveRecord, uploadImageFile } from '../services/api'
 import { labStore, type StoredLabItem } from '../services/labStore'
@@ -145,6 +145,40 @@ function csvField(value: string | number): string {
 }
 
 const impurityTone = (pct: number): string => (pct <= 0.2 ? 'text-emerald-400' : 'text-amber-400')
+
+const SIZE_FRACTIONS: { key: keyof SizeFractions; label: string }[] = [
+  { key: 'fine', label: 'Fine' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'coarse', label: 'Coarse' },
+]
+
+/** Inspector photo: shows "Loading…" while the (large) image downloads, and the not-found note only if it fails. */
+function InspectorImage({ src, alt }: { src: string; alt: string }) {
+  const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading')
+  return (
+    <>
+      {state !== 'loaded' && (
+        <div className="absolute inset-0 grid place-items-center px-6 text-center text-xs text-white/60">
+          {state === 'loading' ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Loading image…
+            </span>
+          ) : (
+            'Photo not found on the backend (it may have been deleted from backend/uploads). The results below are still valid.'
+          )}
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`relative size-full bg-navy-950 object-contain ${state === 'loaded' ? '' : 'invisible'}`}
+        onLoad={() => setState('loaded')}
+        onError={() => setState('error')}
+      />
+    </>
+  )
+}
 
 export default function LabAnalysis() {
   const showToast = useToast()
@@ -601,15 +635,10 @@ export default function LabAnalysis() {
 
                   {/* Display Viewport */}
                   <div className="relative aspect-[3/2] overflow-hidden rounded-lg border border-line bg-navy-950">
-                    <div className="absolute inset-0 grid place-items-center px-6 text-center text-xs text-white/60">
-                      Photo not found on the backend (it may have been deleted from backend/uploads). The results below are still valid.
-                    </div>
-                    <img
+                    <InspectorImage
                       key={activeStage === 'original' ? sample.imageUrl : sample.contourUrl}
                       src={activeStage === 'original' ? sample.imageUrl : sample.contourUrl}
                       alt={`Salt sample ${sample.fileName}`}
-                      className="relative size-full bg-navy-950 object-contain"
-                      onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
                     />
                     <span className="absolute left-3 top-3 rounded bg-navy-900/80 px-2 py-1 font-mono text-[0.7rem] uppercase tracking-wider text-white">
                       {activeStage === 'original' ? 'Original photo' : 'Red = impurity · Green = salt'}
@@ -640,7 +669,7 @@ export default function LabAnalysis() {
                     <span className={`font-mono ${impurityTone(sample.impurityPct)}`}>{sample.impurityPct.toFixed(2)}%</span>
                   </DataRow>
                   <DataRow label="Model Confidence">{formatConfidence(sample.confidence)}</DataRow>
-                  <DataRow label="Inference Latency">{sample.inferenceMs} ms</DataRow>
+                  <DataRow label="Inference Latency">{Math.round(sample.inferenceMs)} ms</DataRow>
                   <DataRow label="Particle Count">{formatNumber(sample.particleCount)} detected</DataRow>
                   <DataRow label="Mean Equivalent Diameter">{sample.meanEcdMm} mm</DataRow>
                   <DataRow label="GLCM Contrast (Texture)">{sample.glcmContrast}</DataRow>
@@ -649,17 +678,16 @@ export default function LabAnalysis() {
 
                 <div className="mt-5 space-y-2.5 border-t border-line pt-4">
                   <div className="text-xs font-semibold uppercase tracking-wider text-ink-500">Estimated Size Fractions</div>
-                  {GRADES.map((g) => {
-                    const val = sample.fractions[g.toLowerCase() as keyof SizeFractions]
-                    const meta = GRADE_META[g]
+                  {SIZE_FRACTIONS.map(({ key, label }) => {
+                    const val = sample.fractions[key] ?? 0
                     return (
-                      <div key={g} className="space-y-1">
+                      <div key={key} className="space-y-1">
                         <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-ink-700">{g}</span>
+                          <span className="font-semibold text-ink-700">{label}</span>
                           <span className="font-mono text-ink-900">{val}%</span>
                         </div>
-                        <div className={`h-2 overflow-hidden rounded-full ${meta.track}`}>
-                          <div className={`h-full rounded-full ${meta.fill}`} style={{ width: `${val}%` }} />
+                        <div className="h-2 overflow-hidden rounded-full bg-line-soft">
+                          <div className="h-full rounded-full bg-brine-600" style={{ width: `${Math.min(100, Math.max(0, val))}%` }} />
                         </div>
                       </div>
                     )
@@ -758,7 +786,7 @@ export default function LabAnalysis() {
                             <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-ink-600">
                               {r.fractions.fine}% / {r.fractions.medium}% / {r.fractions.coarse}%
                             </td>
-                            <td className="px-3 py-2 text-right text-xs tabular-nums text-ink-500">{r.inferenceMs} ms</td>
+                            <td className="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-ink-500">{Math.round(r.inferenceMs)} ms</td>
                           </>
                         ) : (
                           <td colSpan={7} className="px-3 py-2 text-xs">
