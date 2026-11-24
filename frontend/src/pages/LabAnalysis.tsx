@@ -412,7 +412,7 @@ export default function LabAnalysis() {
     try {
       await saveRecord(newRecord)
       patchItem(selectedItem.id, { saved: true })
-      showToast(`Saved sample to Saltfine database as Record #${id}!`)
+      showToast(`Saved sample to SALTURE database as Record #${id}!`)
     } catch (err) {
       showToast(`Could not save: ${(err as Error).message}`, { tone: 'error' })
     }

@@ -1,5 +1,5 @@
 """
-SALTFINE - YOLOv8 impurity highlighter
+SALTURE - YOLOv8 impurity highlighter
 
 Runs the trained YOLOv8 detector on salt photos and draws the result with
 Roboflow Supervision:

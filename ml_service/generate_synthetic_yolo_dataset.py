@@ -1,10 +1,10 @@
 """
-SALTFINE - Synthetic YOLO dataset generator (pipeline smoke test ONLY)
+SALTURE - Synthetic YOLO dataset generator (pipeline smoke test ONLY)
 
 Renders tray images of bright salt crystals with dark/brown insoluble impurity
 specks and writes YOLO-format labels. Use it to verify that training, export and
 inference work end to end. A model trained on this data will NOT be accurate on
-real camera images; replace it with labeled photos from the SALTFINE rig.
+real camera images; replace it with labeled photos from the SALTURE rig.
 
 Usage:
     python generate_synthetic_yolo_dataset.py --train 200 --val 50

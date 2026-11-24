@@ -1,5 +1,5 @@
 """
-SALTFINE - Sea Salt Insoluble Impurities & Purity Model Trainer
+SALTURE - Sea Salt Insoluble Impurities & Purity Model Trainer
 Trains Random Forest classifier to identify pure salt crystals vs. foreign matter (dirt, sand, clay, shell grit).
 Outputs model to: models/salt_impurity_rf.joblib
 """

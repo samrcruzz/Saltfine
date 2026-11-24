@@ -3,7 +3,7 @@
 import type { FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
 import { mulberry32 } from '../utils/random'
 
-export const MODEL_NAME = 'SALTFINE Impurity Detector'
+export const MODEL_NAME = 'SALTURE Impurity Detector'
 
 const SUPPLIERS = ['Dasol Supplier A', 'Dasol Supplier B', 'Dasol Supplier C']
 

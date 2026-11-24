@@ -1,4 +1,4 @@
-# SALTFINE YOLOv8 dataset config (Ultralytics format)
+# SALTURE YOLOv8 dataset config (Ultralytics format)
 #
 # Expected layout (paths relative to `path`):
 #   images/train/*.jpg   labels/train/*.txt

@@ -111,7 +111,7 @@ async function initPostgresSchema() {
   `
   try {
     await pool.query(schemaSql)
-    console.log('✅ SALTFINE PostgreSQL database tables initialized!')
+    console.log('✅ SALTURE PostgreSQL database tables initialized!')
   } catch (err) {
     console.error('Error creating PostgreSQL tables:', err)
   }

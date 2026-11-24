@@ -1,5 +1,5 @@
 """
-SALTFINE - continual-learning pipeline: add new photos and FINE-TUNE the current
+SALTURE - continual-learning pipeline: add new photos and FINE-TUNE the current
 YOLOv8 model instead of training from zero.
 
     new photos

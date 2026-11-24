@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SALTFINE Machine Learning Inference Pipeline
+SALTURE Machine Learning Inference Pipeline
 Purity & Insoluble Impurities Quality Classifier
 Categorizes sea salt into:
   - Preprocessed Food Goods (<= 0.20% insoluble impurities)
@@ -118,8 +118,8 @@ def main():
 
     is_yolo = result["model_source"] == "yolov8"
     output = {
-        "model_name": "SALTFINE YOLOv8 Impurity Detector" if is_yolo
-        else "SALTFINE Impurity Detector (Random Forest + CV)",
+        "model_name": "SALTURE YOLOv8 Impurity Detector" if is_yolo
+        else "SALTURE Impurity Detector (Random Forest + CV)",
         "annotated_image": result.get("annotated_image"),
         "model_source": result["model_source"],
         "predicted_grade": result["predicted_grade"],

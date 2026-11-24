@@ -124,7 +124,7 @@ function computeFallbackMetrics(fileName: string): PythonInferenceResult {
 
   const mean_ecd_mm = 1.48
   return {
-    model_name: 'SALTFINE Impurity Detector',
+    model_name: 'SALTURE Impurity Detector',
     model_source: 'js_fallback',
     predicted_grade,
     quality_tier: predicted_grade,
@@ -170,7 +170,7 @@ export function buildRecord(
     // red/green highlighted copy when YOLOv8 ran; the original stays next to it in uploads/
     file_path: displayUrl(storedFilename, pyResult),
     captured_at: now,
-    model_name: pyResult.model_name || 'SALTFINE Impurity Detector',
+    model_name: pyResult.model_name || 'SALTURE Impurity Detector',
     predicted_grade: pyResult.predicted_grade,
     purity_pct,
     impurity_pct: pyResult.impurity_pct ?? Number((100 - purity_pct).toFixed(2)),

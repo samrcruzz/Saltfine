@@ -34,7 +34,7 @@ function AuthGate() {
   if (status === 'unreachable') {
     return (
       <div className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center gap-4 px-4">
-        <ErrorState title="Cannot reach the SALTFINE server" error="Start the backend (npm run dev in backend/) and try again." />
+        <ErrorState title="Cannot reach the SALTURE server" error="Start the backend (npm run dev in backend/) and try again." />
         <Button variant="primary" onClick={retry}>
           Try again
         </Button>

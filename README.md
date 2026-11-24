@@ -1,4 +1,4 @@
-# SALTFINE
+# SALTURE
 
 Automated Sea Salt Impurity & Purity Classification System
 
@@ -6,7 +6,7 @@ Automated Sea Salt Impurity & Purity Classification System
 
 ## System Overview
 
-SALTFINE is an industrial quality evaluation and sorting platform for sea salt. The system captures optical imagery of sea salt crystals, detects insoluble foreign matter (such as sand, clay, and dark particulate specks) using computer vision and machine learning, calculates physical purity percentage, and automatically routes batches into designated sorting bins.
+SALTURE is an industrial quality evaluation and sorting platform for sea salt. The system captures optical imagery of sea salt crystals, detects insoluble foreign matter (such as sand, clay, and dark particulate specks) using computer vision and machine learning, calculates physical purity percentage, and automatically routes batches into designated sorting bins.
 
 ---
 

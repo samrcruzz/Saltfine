@@ -1,8 +1,8 @@
-// Central configuration for the SALTFINE dashboard.
+// Central configuration for the SALTURE dashboard.
 
 import type { FinenessGrade, GradeMetaMap, PurityGrade } from './types/saltfine'
 
-export const APP_NAME = 'SALTFINE'
+export const APP_NAME = 'SALTURE'
 export const APP_TAGLINE = 'Automated Sea Salt Purity & Quality Sorter'
 
 // How often the dashboard asks the backend for the newest result (ms).

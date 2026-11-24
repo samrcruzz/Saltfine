@@ -1,5 +1,5 @@
 """
-SALTFINE - Roboflow dataset sync
+SALTURE - Roboflow dataset sync
 
 Roboflow project: SaltFine Impurities (object detection)
   https://app.roboflow.com/samuels-workspace-uendm/saltfine-impurities

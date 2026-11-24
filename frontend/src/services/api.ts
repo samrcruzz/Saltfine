@@ -1,4 +1,4 @@
-// Data access layer for SALTFINE fullstack PERN application.
+// Data access layer for SALTURE fullstack PERN application.
 
 import { mockDb, simulation } from '../mockData/mockStore'
 import type { FilterState, FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
@@ -196,7 +196,7 @@ export async function uploadImageFile(
       image_id: id,
       file_path: URL.createObjectURL(file),
       captured_at: new Date().toISOString(),
-      model_name: 'SALTFINE Impurity Detector',
+      model_name: 'SALTURE Impurity Detector',
       predicted_grade: grade,
       quality_tier: grade,
       purity_pct,
@@ -232,7 +232,7 @@ export async function uploadImageFile(
       fileSize: `${(file.size / 1024).toFixed(1)} KB`,
       fileUrl: mockRec.file_path,
       record: mockRec,
-      model_name: 'SALTFINE Impurity Detector',
+      model_name: 'SALTURE Impurity Detector',
       predicted_grade: grade,
       quality_tier: grade,
       purity_pct,

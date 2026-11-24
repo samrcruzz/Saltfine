@@ -29,7 +29,7 @@ export function createApp() {
   app.get('/api/health', (_req, res) => {
     res.json({
       status: 'online',
-      system: 'SALTFINE Automated Sea Salt Fineness Sorter',
+      system: 'SALTURE Automated Sea Salt Fineness Sorter',
       version: '1.0.0-ts',
       timestamp: new Date().toISOString(),
     })

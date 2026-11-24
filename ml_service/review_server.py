@@ -1,5 +1,5 @@
 """
-SALTFINE - local review page for auto-labelled impurities (runs only on this PC)
+SALTURE - local review page for auto-labelled impurities (runs only on this PC)
 
 Opens http://127.0.0.1:8765 in your browser. For each photo of a batch you see
 the auto labels and fix them:
@@ -155,7 +155,7 @@ def run_review(batch: dict, name: str, port: int = 8765, open_browser: bool = Tr
 
 
 PAGE = r"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>SALTFINE review</title>
+<html lang="en"><head><meta charset="utf-8"><title>SALTURE review</title>
 <style>
   :root { --bg:#14161a; --panel:#1d2026; --ink:#e8e8ea; --dim:#9aa0aa; --red:#e53935; --amber:#ffb300; --green:#2fbf4f; }
   * { box-sizing:border-box }
@@ -177,7 +177,7 @@ PAGE = r"""<!doctype html>
   #help { color:var(--dim); font-size:12px; padding:6px 10px; background:var(--panel); border-top:1px solid #2a2e36 }
   kbd { background:#2b303a; border:1px solid #3a404c; border-radius:3px; padding:0 4px; font-size:11px }
 </style></head><body>
-<div id="side"><h1>SALTFINE review</h1><div class="sub" id="sub"></div><div id="list"></div>
+<div id="side"><h1>SALTURE review</h1><div class="sub" id="sub"></div><div id="list"></div>
   <button id="finish">Finish review ▶ train</button></div>
 <div id="main">
   <div id="bar">

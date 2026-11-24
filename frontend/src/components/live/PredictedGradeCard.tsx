@@ -114,7 +114,7 @@ export default function PredictedGradeCard({ record }: PredictedGradeCardProps) 
           {record.sample_code} / {formatBatchId(record.batch_id)}
         </DataRow>
         <DataRow label="Classifier Engine" mono>
-          {record.model_name || 'SALTFINE Impurity Detector'} · {record.inference_ms.toFixed(0)} ms
+          {record.model_name || 'SALTURE Impurity Detector'} · {record.inference_ms.toFixed(0)} ms
         </DataRow>
       </dl>
     </Card>

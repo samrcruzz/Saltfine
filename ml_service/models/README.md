@@ -1,4 +1,4 @@
-# SALTFINE Machine Learning Model Directory
+# SALTURE Machine Learning Model Directory
 
 Place your trained MobileNetV2 model files in this folder.
 

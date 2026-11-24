@@ -88,7 +88,7 @@ export async function downloadReportPdf({
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(...navy)
-  doc.text('SALTFINE Classification Report', margin, 52)
+  doc.text('SALTURE Classification Report', margin, 52)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)

@@ -1,4 +1,4 @@
-# SALTFINE Machine Learning & Computer Vision Dependencies
+# SALTURE Machine Learning & Computer Vision Dependencies
 #
 # GPU (NVIDIA/CUDA) users: install PyTorch from the CUDA index FIRST, then this file:
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128

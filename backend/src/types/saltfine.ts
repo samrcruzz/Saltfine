@@ -1,4 +1,4 @@
-// Core domain types for SALTFINE sea salt purity & quality classification system.
+// Core domain types for SALTURE sea salt purity & quality classification system.
 
 export type PurityGrade = 'Preprocessed Food Goods' | 'Industrial Goods'
 export type FinenessGrade = PurityGrade | 'Fine' | 'Medium' | 'Coarse'

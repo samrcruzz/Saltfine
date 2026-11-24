@@ -1,5 +1,5 @@
 """
-SALTFINE - build a balanced augmented dataset from a few real photos
+SALTURE - build a balanced augmented dataset from a few real photos
 
 From the ORIGINAL photos (read only, never modified) it creates:
   without_impurities/  N images of pure salt

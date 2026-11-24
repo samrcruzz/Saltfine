@@ -1,5 +1,5 @@
 """
-SALTFINE - assemble an Ultralytics train/val dataset from ALL registered batches
+SALTURE - assemble an Ultralytics train/val dataset from ALL registered batches
 
 Reads dataset/batches.json. Splits by SOURCE PHOTO, not at random: each photo
 listed under "holdout" -- plus every augmented image made from it -- goes to val,

@@ -1,8 +1,8 @@
 """
-SALTFINE - free local pre-labeller (no Roboflow credits)
+SALTURE - free local pre-labeller (no Roboflow credits)
 
 Makes first-pass YOLO box labels for salt photos taken on a dark background,
-using classic OpenCV colour rules measured on the SALTFINE rig:
+using classic OpenCV colour rules measured on the SALTURE rig:
   impurity      brownish, mid brightness, compact (Lab b >= ~134.5, V 60-160)
                 grey pebbles are missed by colour: add them to the --impurities JSON
   salt_crystal  bright, low saturation          (V >= ~135, S <= ~45), split with watershed

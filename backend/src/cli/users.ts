@@ -1,4 +1,4 @@
-// Manage SALTFINE sign-in accounts (run from backend/):
+// Manage SALTURE sign-in accounts (run from backend/):
 //   npm run users -- add <name> --role viewer|dev     asks for the password
 //   npm run users -- list
 //   npm run users -- passwd <name>                    asks for the new password

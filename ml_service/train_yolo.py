@@ -1,5 +1,5 @@
 """
-SALTFINE - YOLOv8 Salt Crystal & Insoluble Impurity Detector Trainer
+SALTURE - YOLOv8 Salt Crystal & Insoluble Impurity Detector Trainer
 
 Fine-tunes a pretrained YOLOv8 model to detect two classes:
   0: salt_crystal
