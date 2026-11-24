@@ -29,7 +29,9 @@ onnxruntime>=1.15.0; python_version < "3.15"
 # policy has blocked this file"), which breaks supervision and scikit-learn. 2.5.4 works.
 numpy>=1.24.0,!=2.5.5
 Pillow>=9.5.0
-opencv-python>=4.8.0
+# opencv-python 5.1.0.95: Smart App Control blocks its cv2 DLL too, which stops YOLOv8 (falls back
+# to Random Forest + CV). 5.0.0.93 works.
+opencv-python>=4.8.0,!=5.1.0.95
 PyYAML>=6.0
 
 # Legacy Random Forest trainer (train_impurity_detector.py)
