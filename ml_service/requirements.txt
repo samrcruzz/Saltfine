@@ -10,8 +10,9 @@ ultralytics>=8.3.0
 torch>=2.2.0
 torchvision>=0.17.0
 
-# Roboflow: red/green highlighting (Supervision) + dataset upload/download
-supervision>=0.25.0
+# Red/green highlighting is drawn with OpenCV (highlight.py). Supervision is no longer needed: it imports
+# SciPy, and Smart App Control blocks SciPy 1.18.1's _flapack DLL (the only SciPy build for Python 3.15).
+# Roboflow dataset upload/download:
 python-dotenv>=1.0.0
 # roboflow is only needed for roboflow_dataset.py (dataset sync), not for the website.
 # It pulls pillow-avif-plugin, which has no wheel for Python 3.15 yet, so it is skipped there.
@@ -29,8 +30,8 @@ onnxruntime>=1.15.0; python_version < "3.15"
 # policy has blocked this file"), which breaks supervision and scikit-learn. 2.5.4 works.
 numpy>=1.24.0,!=2.5.5
 Pillow>=9.5.0
-# opencv-python 5.1.0.95: Smart App Control blocks its cv2 DLL too, which stops YOLOv8 (falls back
-# to Random Forest + CV). 5.0.0.93 works.
+# opencv-python 5.1.0.95: Smart App Control blocks its cv2 DLL too, which stops YOLOv8 (every analysis
+# then fails with an error; there is no fallback). 5.0.0.93 works.
 opencv-python>=4.8.0,!=5.1.0.95
 PyYAML>=6.0
 

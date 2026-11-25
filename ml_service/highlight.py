@@ -1,10 +1,14 @@
 """
 SALTURE - YOLOv8 impurity highlighter
 
-Runs the trained YOLOv8 detector on salt photos and draws the result with
-Roboflow Supervision:
+Runs the trained YOLOv8 detector on salt photos and draws the result with OpenCV:
   - salt crystals  -> GREEN
   - impurities     -> RED
+
+Counts and areas come straight from the Ultralytics result (box coordinates in
+original-image pixels). Supervision is not used: it imports SciPy, whose
+_flapack DLL is blocked by Windows Smart App Control on the Python 3.15 build,
+which stopped the model from running at all.
 
 Colours are picked by class NAME, not class id, because Roboflow exports sort
 class names alphabetically (impurity=0, salt_crystal=1) while the repo's own
@@ -27,15 +31,16 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 import cv2  # noqa: E402
 import numpy as np  # noqa: E402
-import supervision as sv  # noqa: E402
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_WEIGHTS = BASE_DIR / "models" / "saltfine_yolov8.pt"
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff"}
 
-GREEN = sv.Color(r=0, g=200, b=0)
-RED = sv.Color(r=230, g=0, b=0)
-PALETTE = sv.ColorPalette([GREEN, RED])  # index 0 = salt, 1 = impurity
+# OpenCV colours are BGR
+GREEN = (0, 200, 0)
+RED = (0, 0, 230)
+PALETTE = (GREEN, RED)  # index 0 = salt, 1 = impurity
+FILL_OPACITY = 0.35
 
 
 def is_impurity(class_name: str) -> bool:
@@ -81,39 +86,45 @@ def highlight(image: np.ndarray, model, conf: float = 0.25, imgsz: int = 1280, l
     started = time.perf_counter()
     result = model.predict(image, conf=conf, imgsz=imgsz, max_det=3000, verbose=False)[0]  # dense trays: >1000 crystals
     inference_ms = (time.perf_counter() - started) * 1000
-    detections = sv.Detections.from_ultralytics(result)
     names = result.names
+    boxes = result.boxes
+    xyxy = boxes.xyxy.cpu().numpy().reshape(-1, 4)  # original-image pixels
+    class_ids = boxes.cls.cpu().numpy().astype(int)
+    confidences = boxes.conf.cpu().numpy()
 
-    impurity_mask = np.array([is_impurity(names[int(c)]) for c in detections.class_id], dtype=bool)
-    color_lookup = impurity_mask.astype(int)  # 0 -> GREEN, 1 -> RED
-    areas = detections.area if len(detections) else np.zeros(0)
+    impurity_mask = np.array([is_impurity(names[int(c)]) for c in class_ids], dtype=bool)
+    areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])  # box area per detection
 
     scene = image.copy()
-    if len(detections):
+    if len(xyxy):
         thickness = max(1, round(min(image.shape[:2]) / 400))
-        scene = sv.ColorAnnotator(color=PALETTE, opacity=0.35).annotate(
-            scene, detections, custom_color_lookup=color_lookup
-        )
-        scene = sv.BoxAnnotator(color=PALETTE, thickness=thickness).annotate(
-            scene, detections, custom_color_lookup=color_lookup
-        )
+        corners = [((int(x1), int(y1)), (int(x2), int(y2))) for x1, y1, x2, y2 in xyxy]
+        # translucent fill, then a solid outline, in the class colour
+        overlay = scene.copy()
+        for (p1, p2), imp in zip(corners, impurity_mask):
+            cv2.rectangle(overlay, p1, p2, PALETTE[int(imp)], -1)
+        cv2.addWeighted(overlay, FILL_OPACITY, scene, 1 - FILL_OPACITY, 0, dst=scene)
+        for (p1, p2), imp in zip(corners, impurity_mask):
+            cv2.rectangle(scene, p1, p2, PALETTE[int(imp)], thickness)
         # Impurities are tiny specks: ring each one so it stands out at a glance.
-        for x1, y1, x2, y2 in detections.xyxy[impurity_mask]:
+        for x1, y1, x2, y2 in xyxy[impurity_mask]:
             center = (int((x1 + x2) / 2), int((y1 + y2) / 2))
             radius = int(max(x2 - x1, y2 - y1) * 0.75) + 6 * thickness
-            cv2.circle(scene, center, radius, RED.as_bgr(), thickness + 1, cv2.LINE_AA)
+            cv2.circle(scene, center, radius, RED, thickness + 1, cv2.LINE_AA)
         if labels:
-            text = [f"{names[int(c)]} {p:.2f}" for c, p in zip(detections.class_id, detections.confidence)]
-            scene = sv.LabelAnnotator(color=PALETTE, text_scale=0.4, text_padding=3).annotate(
-                scene, detections, labels=text, custom_color_lookup=color_lookup
-            )
+            for (p1, _), c, p, imp in zip(corners, class_ids, confidences, impurity_mask):
+                text = f"{names[int(c)]} {p:.2f}"
+                (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+                top = max(0, p1[1] - th - 6)
+                cv2.rectangle(scene, (p1[0], top), (p1[0] + tw + 6, top + th + 6), PALETTE[int(imp)], -1)
+                cv2.putText(scene, text, (p1[0] + 3, top + th + 3), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
 
     res = HighlightResult(
         salt_count=int((~impurity_mask).sum()),
         impurity_count=int(impurity_mask.sum()),
         salt_area_px=float(areas[~impurity_mask].sum()),
         impurity_area_px=float(areas[impurity_mask].sum()),
-        mean_confidence=float(detections.confidence.mean()) if len(detections) else 0.0,
+        mean_confidence=float(confidences.mean()) if len(confidences) else 0.0,
         annotated=scene,
         inference_ms=inference_ms,
     )
@@ -138,7 +149,7 @@ def _draw_legend(res: HighlightResult) -> None:
     cv2.addWeighted(overlay, 0.55, img, 0.45, 0, dst=img)
     for i, (text, color) in enumerate(lines):
         y = pad + i * line_h
-        cv2.rectangle(img, (pad, y + 2), (pad + sw, y + 2 + sw), color.as_bgr(), -1)
+        cv2.rectangle(img, (pad, y + 2), (pad + sw, y + 2 + sw), color, -1)
         cv2.putText(img, text, (pad * 2 + sw, y + sw), font, scale, (255, 255, 255), th, cv2.LINE_AA)
 
 
