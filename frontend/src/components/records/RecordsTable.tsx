@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from 'lucide-react'
 import type { SaltRecord, SortColumn, SortDirection } from '../../types/saltfine'
 import { formatConfidence, formatDate, formatRecordId, formatTime } from '../../utils/format'
+import DemoBadge from '../ui/DemoBadge'
 import GradeBadge from '../ui/GradeBadge'
 
 export interface ColumnDef {
@@ -94,17 +95,20 @@ export default function RecordsTable({ records, sort, onSort, onViewImage }: Rec
                   {formatTime(record.classified_at, { seconds: false })}
                 </span>
               </td>
-              <td className={`${td} font-mono text-[0.82rem]`}>{record.sample_code}</td>
+              <td className={`${td} font-mono text-[0.82rem]`}>
+                {record.sample_code}
+                {record.is_demo && <DemoBadge className="ml-2" />}
+              </td>
               <td className={td}>
                 <GradeBadge grade={record.predicted_grade} />
               </td>
               <td className={`${td} text-right tabular-nums font-mono font-semibold ${
-                (record.impurity_pct ?? 0.12) <= 0.20 ? 'text-emerald-400' : 'text-amber-400'
+                record.impurity_pct <= 0.20 ? 'text-emerald-400' : 'text-amber-400'
               }`}>
-                {(record.impurity_pct ?? (record.purity_pct ? Number((100 - record.purity_pct).toFixed(2)) : 0.12)).toFixed(2)}%
+                {record.impurity_pct.toFixed(2)}%
               </td>
               <td className={`${td} text-right tabular-nums font-mono text-rose-400`}>
-                {(record.impurity_count ?? Math.max(1, Math.round(record.particle_count * 0.035)))} specks
+                {record.impurity_count} specks
               </td>
               <td className={td}>{record.container_grade}</td>
               <td className={`${td} text-right tabular-nums`}>{record.mass_g.toFixed(1)}</td>

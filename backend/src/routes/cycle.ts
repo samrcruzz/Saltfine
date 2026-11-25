@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
 import { dbService } from '../db'
-import { analysisResponse, buildRecord, runPythonPipeline, uploadDir } from './analyze'
+import { AnalysisError, analysisResponse, buildRecord, parseMassG, runPythonPipeline, uploadDir, type PipelineResult } from './analyze'
 
 const router = Router()
 
@@ -29,8 +29,15 @@ router.get('/inbox', (_req: Request, res: Response) => {
 })
 
 // POST /api/cycle/trigger -> analyze the next camera photo with the YOLOv8 model, save + return the record
-router.post('/trigger', async (_req: Request, res: Response) => {
+// Optional body/query field massG (or mass_g): the weighed batch mass in grams, default 100 g.
+// If the model cannot grade the photo, nothing is saved and the photo goes back to the inbox for a retry.
+router.post('/trigger', async (req: Request, res: Response) => {
   try {
+    const mass = parseMassG(req.body?.massG, req.body?.mass_g, req.query.massG)
+    if ('error' in mass) {
+      res.status(400).json({ error: mass.error })
+      return
+    }
     const name = nextInboxImage()
     if (!name) {
       res.status(404).json({ error: `No new photo in the camera inbox (${cameraInbox}). Save a photo there and trigger again.` })
@@ -40,14 +47,25 @@ router.post('/trigger', async (_req: Request, res: Response) => {
     const ext = path.extname(name)
     const base = path.basename(name, ext).replace(/[^a-zA-Z0-9-_]/g, '_')
     const stored = `SALT_${Date.now()}_${base}${ext}`
+    const src = path.join(cameraInbox, name)
     const dst = path.join(uploadDir, stored)
-    fs.renameSync(path.join(cameraInbox, name), dst)
+    fs.renameSync(src, dst)
     const size = fs.statSync(dst).size
 
-    const pyResult = await runPythonPipeline(dst)
-    const record = buildRecord(pyResult, stored, { sampleCode: `CAM-${String(Date.now()).slice(-5)}` })
+    let result: PipelineResult
+    try {
+      result = await runPythonPipeline(dst)
+    } catch (error) {
+      fs.renameSync(dst, src) // keep the photo for the next trigger
+      const reason = error instanceof Error ? error.message : String(error)
+      res.status(error instanceof AnalysisError ? 503 : 500).json({
+        error: `Image analysis failed for ${name}: ${reason}. No result was recorded; the photo is back in the camera inbox.`,
+      })
+      return
+    }
+    const record = buildRecord(result, stored, { sampleCode: `CAM-${String(Date.now()).slice(-5)}`, massG: mass.massG })
     await dbService.insertRecord(record)
-    res.json({ ...record, analysis: analysisResponse({ originalname: name, size, filename: stored }, pyResult, record) })
+    res.json({ ...record, analysis: analysisResponse({ originalname: name, size, filename: stored }, result, record) })
   } catch (error) {
     res.status(500).json({ error: (error as Error).message })
   }

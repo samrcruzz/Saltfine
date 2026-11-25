@@ -31,18 +31,17 @@ const CSV_COLUMNS: Array<[string, ValueExtractor]> = [
   ['batch_id', (r) => formatBatchId(r.batch_id)],
   ['sample_id', (r) => r.sample_code],
   ['predicted_grade', (r) => r.predicted_grade],
-  ['impurity_pct', (r) => (r.impurity_pct ?? 0.12).toFixed(2)],
-  ['impurity_count', (r) => r.impurity_count ?? 0],
+  ['impurity_pct', (r) => r.impurity_pct.toFixed(2)],
+  ['impurity_count', (r) => r.impurity_count],
+  ['salt_crystal_count', (r) => r.salt_crystal_count],
   ['confidence_pct', (r) => (r.confidence * 100).toFixed(1)],
-  ['est_fine_pct', (r) => r.est_fine_pct.toFixed(1)],
-  ['est_medium_pct', (r) => r.est_medium_pct.toFixed(1)],
-  ['est_coarse_pct', (r) => r.est_coarse_pct.toFixed(1)],
   ['particle_count', (r) => r.particle_count],
-  ['mean_ecd_mm', (r) => r.mean_ecd_mm.toFixed(2)],
-  ['median_ecd_mm', (r) => r.median_ecd_mm.toFixed(2)],
   ['container', (r) => r.container_grade],
   ['mass_g', (r) => r.mass_g.toFixed(1)],
-  ['processing_time_s', (r) => r.processing_time_s.toFixed(1)],
+  ['processing_time_s', (r) => r.processing_time_s.toFixed(2)],
+  ['inference_ms', (r) => r.inference_ms.toFixed(0)],
+  ['model', (r) => r.model_name],
+  ['data_source', (r) => (r.is_demo ? 'demo (simulated)' : 'measured')],
   ['image_file', (r) => r.file_path],
 ]
 
@@ -93,7 +92,7 @@ export async function downloadReportPdf({
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(91, 104, 119)
-  doc.text('Sea Salt Fineness Classification System', margin, 68)
+  doc.text('Sea Salt Purity Classification System', margin, 68)
 
   const gradeLabel = filters.grade && filters.grade !== 'All' ? filters.grade : 'All grades'
   doc.setTextColor(22, 32, 44)
@@ -101,8 +100,23 @@ export async function downloadReportPdf({
   doc.text(`Quality grade: ${gradeLabel}`, margin, 106)
   doc.text(`Generated: ${formatDateTime(generatedAt)}`, margin, 120)
 
+  const demoCount = records.filter((r) => r.is_demo).length
+  let summaryY = 138
+  if (demoCount > 0) {
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(180, 83, 9)
+    doc.text(
+      `DEMO DATA: ${demoCount} of ${records.length} records are simulated, not measured. Do not use for evaluation.`,
+      margin,
+      136,
+    )
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(22, 32, 44)
+    summaryY = 150
+  }
+
   autoTable(doc, {
-    startY: 138,
+    startY: summaryY,
     margin: { left: margin, right: margin },
     theme: 'grid',
     head: [['Total batches', 'Total sorted mass', 'Average confidence', 'Avg. processing time']],
@@ -147,17 +161,18 @@ export async function downloadReportPdf({
     formatDateTime(r.classified_at),
     formatBatchId(r.batch_id),
     r.predicted_grade,
-    `${(r.impurity_pct ?? 0.12).toFixed(2)} %`,
+    `${r.impurity_pct.toFixed(2)} %`,
     `${(r.confidence * 100).toFixed(1)} %`,
     `${r.mass_g.toFixed(0)} g`,
-    `${r.processing_time_s.toFixed(1)} s`,
+    `${r.processing_time_s.toFixed(2)} s`,
+    r.is_demo ? 'demo' : 'measured',
   ])
 
   autoTable(doc, {
     startY: tableY + 20,
     margin: { left: margin, right: margin },
     theme: 'plain',
-    head: [['ID', 'Timestamp', 'Batch', 'Grade', 'Impurities', 'Conf.', 'Mass', 'Latency']],
+    head: [['ID', 'Timestamp', 'Batch', 'Grade', 'Impurities', 'Conf.', 'Mass', 'Proc. time', 'Source']],
     body: rows,
     headStyles: { fillColor: [240, 244, 248], textColor: navy, fontStyle: 'bold' },
     styles: { fontSize: 8, cellPadding: 4 },

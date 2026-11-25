@@ -1,9 +1,11 @@
-// Synthetic record generator for mock mode.
+// Synthetic record generator for demo / mock mode. NOTHING here is measured: every record is simulated,
+// carries is_demo: true and is labelled as demo data in the dashboard. Real records only come from
+// photos analyzed by the YOLOv8 model (backend/src/routes/analyze.ts).
 
-import type { FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
+import type { PurityGrade, SaltRecord } from '../types/saltfine'
 import { mulberry32 } from '../utils/random'
 
-export const MODEL_NAME = 'SALTURE Impurity Detector'
+export const MODEL_NAME = 'Simulated demo data (not the model)'
 
 const SUPPLIERS = ['Dasol Supplier A', 'Dasol Supplier B', 'Dasol Supplier C']
 
@@ -13,13 +15,8 @@ const PURITY_WEIGHTS: Array<[PurityGrade, number]> = [
   ['Industrial Goods', 0.35],
 ]
 
-// Typical projected area (mm²) and equivalent-circle diameter (mm) of one
-// particle in each class. Also used by the simulated image renderer.
+// Typical projected area (mm²) of one crystal per size class, for the simulated image renderer only.
 export const CLASS_AREA_MM2: Record<string, number> = { Fine: 0.264, Medium: 1.674, Coarse: 6.38 }
-const CLASS_ECD_MM: Record<string, number> = { Fine: 0.58, Medium: 1.46, Coarse: 2.85 }
-
-// Plate area covered by salt inside one camera frame (mm²).
-const COVERED_AREA_MM2 = 528
 
 const round = (value: number, digits = 1): number => Number(value.toFixed(digits))
 const pad = (value: number | string, length = 4): string => String(value).padStart(length, '0')
@@ -32,29 +29,6 @@ function pickGrade(rand: () => number): PurityGrade {
     if (roll < 0) return grade
   }
   return 'Preprocessed Food Goods'
-}
-
-// Estimated size fractions (%). The predicted grade is the dominant fraction.
-function makeFractions(grade: FinenessGrade, rand: () => number): SizeFractions {
-  const dominant = 56 + Math.pow(rand(), 1.3) * 34
-  const rest = 100 - dominant
-  let fine: number
-  let medium: number
-
-  if (grade === 'Fine') {
-    fine = dominant
-    medium = rest * (0.65 + rand() * 0.25)
-  } else if (grade === 'Coarse') {
-    medium = rest * (0.65 + rand() * 0.25)
-    fine = rest - medium
-  } else {
-    medium = dominant
-    fine = rest * (0.3 + rand() * 0.4)
-  }
-
-  fine = round(fine)
-  medium = round(medium)
-  return { fine, medium, coarse: round(100 - fine - medium) }
 }
 
 export type RecordFactory = (classifiedAt: Date) => SaltRecord
@@ -95,23 +69,16 @@ export function createRecordFactory(seed = 457): RecordFactory {
     }
     const purityPct = round(100 - impurityPct, 2)
 
-    const { fine, medium, coarse } = makeFractions('Medium', rand)
     const confidence = clamp(0.88 + (1 - impurityPct) * 0.08 + (rand() - 0.5) * 0.03, 0.82, 0.995)
 
-    const covered = COVERED_AREA_MM2 * (0.85 + rand() * 0.3)
     const particleCount = Math.round(550 + rand() * 950)
     const impurityCount = Math.max(1, Math.round(particleCount * (impurityPct / 100) * 14))
     const saltCrystalCount = particleCount - impurityCount
     const contaminationAreaPct = impurityPct
 
-    const meanEcd = 1.48 * (0.97 + rand() * 0.06)
-    const medianEcd = meanEcd * (0.9 + rand() * 0.07)
-    const meanArea = (Math.PI / 4) * meanEcd ** 2 * (1.02 + rand() * 0.1)
-
-    const coarseness = 0.45
-
-    const massG = 180 + rand() * 340
-    const processingTimeS = 11 + massG * 0.018 + rand() * 3
+    // around the 100 g thesis batch size
+    const massG = 100 + (rand() - 0.5) * 6
+    const processingTimeS = 2 + rand() * 2
 
     const at = classifiedAt.getTime()
 
@@ -127,9 +94,6 @@ export function createRecordFactory(seed = 457): RecordFactory {
       contamination_area_pct: contaminationAreaPct,
       quality_tier: grade,
       confidence: round(confidence, 4),
-      est_fine_pct: fine,
-      est_medium_pct: medium,
-      est_coarse_pct: coarse,
       inference_ms: round(14 + rand() * 12, 1),
       classified_at: new Date(at).toISOString(),
 
@@ -145,13 +109,6 @@ export function createRecordFactory(seed = 457): RecordFactory {
 
       // particle_features
       particle_count: particleCount,
-      mean_area_mm2: round(meanArea, 3),
-      mean_ecd_mm: round(meanEcd, 2),
-      median_ecd_mm: round(medianEcd, 2),
-      glcm_contrast: round(0.18 + coarseness * 0.62 + rand() * 0.08, 3),
-      glcm_homogeneity: round(0.9 - coarseness * 0.3 - rand() * 0.05, 3),
-      glcm_energy: round(0.3 - coarseness * 0.18 - rand() * 0.03, 3),
-      glcm_correlation: round(0.78 + coarseness * 0.15 + rand() * 0.04, 3),
 
       // sorting_records (salt is routed to the bin of the predicted grade)
       sorting_id: id,
@@ -159,6 +116,8 @@ export function createRecordFactory(seed = 457): RecordFactory {
       mass_g: round(massG),
       processing_time_s: round(processingTimeS),
       sorted_at: new Date(at + Math.round(3000 + rand() * 3000)).toISOString(),
+
+      is_demo: true,
     }
   }
 }

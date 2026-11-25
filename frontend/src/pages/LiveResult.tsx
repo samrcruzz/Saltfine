@@ -13,7 +13,7 @@ import CapturedImageCard from '../components/live/CapturedImageCard'
 import ParticleCard from '../components/live/ParticleCard'
 import PredictedGradeCard from '../components/live/PredictedGradeCard'
 import RecentRecordsCard from '../components/live/RecentRecordsCard'
-import SizeFractionsCard from '../components/live/SizeFractionsCard'
+import ImpurityBreakdownCard from '../components/live/ImpurityBreakdownCard'
 import SortingCard from '../components/live/SortingCard'
 import Button from '../components/ui/Button'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/PageState'
@@ -36,6 +36,8 @@ interface BatchUploadState {
   isFinished: boolean
   foodGradeCount: number
   industrialCount: number
+  savedCount?: number
+  failedCount?: number
 }
 
 // Tab 1: Live Classification Result & Real-Time Sorter Ingestion
@@ -64,7 +66,11 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
     try {
       const newRec = await triggerNewCycle()
       setOverrideRecord(newRec)
-      showToast(`Batch B-${String(newRec.batch_id).padStart(4, '0')} analyzed by the model: ${newRec.impurity_count} impurities`)
+      showToast(
+        newRec.is_demo
+          ? `Demo batch B-${String(newRec.batch_id).padStart(4, '0')} simulated (not measured): ${newRec.impurity_count} impurities`
+          : `Batch B-${String(newRec.batch_id).padStart(4, '0')} analyzed by the model: ${newRec.impurity_count} impurities`,
+      )
     } catch (err) {
       showToast((err as Error).message || 'Could not trigger batch cycle', { tone: 'error' })
     } finally {
@@ -92,6 +98,9 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
 
     let foodCount = 0
     let indCount = 0
+    let savedCount = 0
+    let failedCount = 0
+    let firstError: string | undefined
 
     for (let i = 0; i < total; i++) {
       if (cancelBatchRef.current) {
@@ -118,14 +127,17 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
 
         if (res.record) {
           setOverrideRecord(res.record)
-          const impPct = res.record.impurity_pct ?? Number((100 - (res.record.purity_pct ?? 99.88)).toFixed(2))
-          if (impPct <= 0.20) foodCount++
+          savedCount++
+          if (res.record.impurity_pct <= 0.20) foodCount++
           else indCount++
         }
 
         // Brief delay so the user can see each step and live cards update smoothly
         await new Promise((resolve) => setTimeout(resolve, 150))
       } catch (err) {
+        // The model could not grade this photo: nothing was saved for it
+        failedCount++
+        firstError ??= `${file.name}: ${(err as Error).message}`
         console.error('Error uploading batch file:', file.name, err)
       }
 
@@ -140,8 +152,12 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
       )
     }
 
-    setBatchState((prev) => (prev ? { ...prev, isFinished: true } : null))
-    showToast(`✓ Batch processed: ${total} images saved to Salt-Record Log!`)
+    setBatchState((prev) => (prev ? { ...prev, isFinished: true, savedCount, failedCount } : null))
+    if (failedCount > 0) {
+      showToast(`${savedCount} of ${total} images saved; ${failedCount} could not be analyzed (${firstError})`, { tone: 'error' })
+    } else {
+      showToast(`✓ Batch processed: ${savedCount} images saved to Salt-Record Log!`)
+    }
 
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -219,7 +235,9 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
                 </div>
                 <p className="mt-0.5 text-xs text-ink-500">
                   {batchState.isFinished
-                    ? `All ${batchState.total} images classified and logged directly into Salt-Record Log.`
+                    ? batchState.failedCount
+                      ? `${batchState.savedCount} of ${batchState.total} images classified and logged; ${batchState.failedCount} could not be analyzed (nothing saved for them).`
+                      : `All ${batchState.total} images classified and logged directly into Salt-Record Log.`
                     : `Processing: ${batchState.currentFileName} → Committing result to database`}
                 </p>
               </div>
@@ -312,7 +330,7 @@ export default function LiveResult({ onNavigate }: LiveResultProps) {
           <div className="grid gap-5 lg:grid-cols-12 lg:grid-rows-[auto_1fr]">
             <div className="grid content-start gap-5 md:grid-cols-2 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:grid-cols-1">
               <PredictedGradeCard record={record} />
-              <SizeFractionsCard record={record} />
+              <ImpurityBreakdownCard record={record} />
             </div>
 
             <div className="space-y-5 lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1">

@@ -36,7 +36,7 @@ Saltfine/
 │
 ├── ml_service/                   # Python Machine Learning Subsystem
 │   ├── models/                   # Location for 'salt_impurity_rf.joblib' weights
-│   ├── predict.py                # Python inference script (OpenCV segmentation + ML classification)
+│   ├── predict.py                # YOLOv8 inference for one photo (no fallback: errors out if the model cannot run)
 │   ├── train_impurity_detector.py# Random Forest classifier training script
 │   └── requirements.txt          # Python dependencies
 │
@@ -96,7 +96,16 @@ npm run users -- remove ana
 ```
 Set `AUTH_SECRET` in `backend/.env` (see `.env.example`) so people stay signed in across server restarts.
 Open the dashboard at `http://localhost:5173` (not `127.0.0.1`), the same host name as the API, so the sign-in cookie is sent.
-Without `VITE_API_BASE_URL` (mock mode) there is no backend, so there is no sign-in either.
+The dashboard talks to `VITE_API_BASE_URL` (default `http://localhost:5000`). Demo mode (`VITE_DEMO_MODE=true` in
+`frontend/.env`) runs without a backend on simulated data instead, so there is no sign-in either; it is off by
+default and everything it shows is labelled DEMO. The backend's `SEED_DEMO_DATA=true` likewise pre-fills the
+in-memory store with simulated records marked DEMO (off by default).
+
+#### Measured values only
+Every grade, impurity percentage, count and timing in a record comes from `ml_service/predict.py` running the
+YOLOv8 model on the photo; the batch mass is what the operator enters (default 100 g). If the model cannot run
+(missing weights or Python packages) or finds nothing to grade, the upload or cycle fails with an error and no
+record is saved. Run `ml_service/.venv/Scripts/python ml_service/predict.py <photo>` to check the model directly.
 
 ### 3. Start Frontend Dashboard
 ```bash

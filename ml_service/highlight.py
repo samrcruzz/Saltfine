@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import sys
+import time
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,6 +51,8 @@ class HighlightResult:
     impurity_area_px: float
     mean_confidence: float
     annotated: np.ndarray
+    #: measured wall-clock time of the YOLOv8 predict() call on this image (ms)
+    inference_ms: float = 0.0
 
     @property
     def total(self) -> int:
@@ -75,7 +78,9 @@ def load_model(weights: Path = DEFAULT_WEIGHTS):
 
 
 def highlight(image: np.ndarray, model, conf: float = 0.25, imgsz: int = 1280, labels: bool = False) -> HighlightResult:
+    started = time.perf_counter()
     result = model.predict(image, conf=conf, imgsz=imgsz, max_det=3000, verbose=False)[0]  # dense trays: >1000 crystals
+    inference_ms = (time.perf_counter() - started) * 1000
     detections = sv.Detections.from_ultralytics(result)
     names = result.names
 
@@ -110,6 +115,7 @@ def highlight(image: np.ndarray, model, conf: float = 0.25, imgsz: int = 1280, l
         impurity_area_px=float(areas[impurity_mask].sum()),
         mean_confidence=float(detections.confidence.mean()) if len(detections) else 0.0,
         annotated=scene,
+        inference_ms=inference_ms,
     )
     _draw_legend(res)
     return res

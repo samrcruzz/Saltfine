@@ -1,43 +1,75 @@
 #!/usr/bin/env python3
 """
-SALTURE Machine Learning Inference Pipeline
-Purity & Insoluble Impurities Quality Classifier
-Categorizes sea salt into:
+SALTURE inference: grades one photo of a sea-salt batch with the trained YOLOv8 detector.
+
   - Preprocessed Food Goods (<= 0.20% insoluble impurities)
-  - Industrial Goods (> 0.20% insoluble impurities)
+  - Industrial Goods        (>  0.20% insoluble impurities)
+
+Prints ONE JSON object on stdout (the backend parses it). Every number in it is
+measured on the given photo. There is no fallback: when the weights or the
+Python dependencies are missing, or the model finds nothing to grade, it prints
+{"error": "..."} and exits non-zero, so no made-up result can reach a record.
+
+Usage: python predict.py <path_to_image>
 """
 
-import sys
-import os
+import contextlib
 import json
+import os
+import sys
 import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-MODELS_DIR = BASE_DIR / "models"
-RF_MODEL_PATH = MODELS_DIR / "salt_impurity_rf.joblib"
-YOLO_WEIGHTS = MODELS_DIR / "saltfine_yolov8.pt"
+YOLO_WEIGHTS = BASE_DIR / "models" / "saltfine_yolov8.pt"
 FOOD_GRADE_MAX_IMPURITY_PCT = 0.20
 
+EXIT_USAGE = 1          # no image path, or the file does not exist
+EXIT_MODEL_UNAVAILABLE = 2  # weights or dependencies missing / cannot load
+EXIT_ANALYSIS_FAILED = 3    # unreadable image, or nothing detected to grade
 
-def analyze_with_yolo(image_path: str):
-    """YOLOv8 detection + red/green highlight. Returns None if unavailable,
-    so the caller falls back to the legacy pipeline."""
+
+class AnalysisError(Exception):
+    def __init__(self, message: str, exit_code: int):
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
+def fail(message: str, exit_code: int) -> None:
+    print(json.dumps({"error": message}))
+    sys.exit(exit_code)
+
+
+def analyze_with_yolo(image_path: str) -> dict:
+    """YOLOv8 detection + red/green highlight. Raises AnalysisError when it cannot grade the photo."""
     if not YOLO_WEIGHTS.exists():
-        return None
-    try:
-        import contextlib
+        raise AnalysisError(
+            f"YOLOv8 weights not found: {YOLO_WEIGHTS}. Train or copy the model first (see ml_service/models/README.md).",
+            EXIT_MODEL_UNAVAILABLE,
+        )
 
-        # Keep stdout clean: the backend parses it as a single JSON object.
-        with contextlib.redirect_stdout(sys.stderr):
+    # Keep stdout clean: the backend parses it as a single JSON object.
+    with contextlib.redirect_stdout(sys.stderr):
+        try:
             from highlight import highlight_file, load_model
 
-            src = Path(image_path)
-            dst = src.with_name(f"{src.stem}_highlighted{src.suffix or '.jpg'}")
-            r = highlight_file(src, dst, load_model(YOLO_WEIGHTS))
-    except Exception as exc:  # missing deps, unreadable image, bad weights...
-        print(f"[predict] YOLOv8 unavailable, falling back: {exc}", file=sys.stderr)
-        return None
+            model = load_model(YOLO_WEIGHTS)
+        except Exception as exc:  # missing deps, blocked DLLs, bad weights...
+            raise AnalysisError(f"YOLOv8 could not be loaded: {exc}", EXIT_MODEL_UNAVAILABLE) from exc
+
+        src = Path(image_path)
+        dst = src.with_name(f"{src.stem}_highlighted{src.suffix or '.jpg'}")
+        try:
+            r = highlight_file(src, dst, model)
+        except Exception as exc:  # unreadable image, inference error...
+            raise AnalysisError(f"YOLOv8 could not analyze the image: {exc}", EXIT_ANALYSIS_FAILED) from exc
+
+    if r.total == 0:
+        # 0 / 0 impurity area: there is nothing to grade, so do not report 0% (= Food Goods).
+        raise AnalysisError(
+            "YOLOv8 detected no salt crystals or impurities in this image, so it cannot be graded.",
+            EXIT_ANALYSIS_FAILED,
+        )
 
     impurity_pct = round(r.impurity_area_pct, 2)
     grade = "Preprocessed Food Goods" if impurity_pct <= FOOD_GRADE_MAX_IMPURITY_PCT else "Industrial Goods"
@@ -46,107 +78,41 @@ def analyze_with_yolo(image_path: str):
         "quality_tier": grade,
         "purity_pct": round(100.0 - impurity_pct, 2),
         "impurity_pct": impurity_pct,
+        # share of detected particle box area that is impurity (see HighlightResult.impurity_area_pct)
+        "contamination_area_pct": impurity_pct,
         "impurity_count": r.impurity_count,
         "salt_crystal_count": r.salt_count,
-        "total_particles": r.total,
-        "contamination_area_pct": impurity_pct,
+        "particle_count": r.total,
         "confidence": round(r.mean_confidence, 4),
-        "model_source": "yolov8",
+        "inference_ms": round(r.inference_ms, 1),
         "annotated_image": dst.name,
     }
 
-def analyze_salt_purity(image_path: str):
-    """
-    Analyzes salt crystals and foreign matter/impurities from the input image.
-    Computes total particles, pure crystals, impurity specks, and purity percentage.
-    """
-    file_stat = os.stat(image_path)
-    file_size_kb = file_stat.st_size / 1024
-    file_name = Path(image_path).name
-
-    # Deterministic seed based on file content & name
-    hash_val = sum(ord(c) for c in file_name) + int(file_size_kb * 10)
-    roll = (hash_val % 100) / 100.0
-
-    total_particles = int(650 + (hash_val % 750))
-
-    # Impurity distribution based on optical sampling:
-    # <= 0.20% -> Preprocessed Food Goods
-    # > 0.20% -> Industrial Goods
-    if roll < 0.65:
-        # Preprocessed Food Goods (<= 0.20% Impurities)
-        impurity_pct = round(0.06 + ((hash_val % 13) / 100.0), 2)
-        predicted_grade = "Preprocessed Food Goods"
-        confidence = round(0.92 + ((hash_val % 7) / 100.0), 4)
-    else:
-        # Industrial Goods (> 0.20% Impurities)
-        impurity_pct = round(0.20 + ((hash_val % 6) / 100.0), 2)
-        predicted_grade = "Industrial Goods"
-        confidence = round(0.89 + ((hash_val % 8) / 100.0), 4)
-
-    purity_pct = round(100.0 - impurity_pct, 2)
-    impurity_count = max(1, int(total_particles * (impurity_pct / 100.0) * 14))
-    salt_crystal_count = total_particles - impurity_count
-    contamination_area_pct = impurity_pct
-
-    return {
-        "predicted_grade": predicted_grade,
-        "quality_tier": predicted_grade,
-        "purity_pct": purity_pct,
-        "impurity_pct": impurity_pct,
-        "impurity_count": impurity_count,
-        "salt_crystal_count": salt_crystal_count,
-        "total_particles": total_particles,
-        "contamination_area_pct": contamination_area_pct,
-        "confidence": confidence,
-        "model_source": "random_forest_cv_pipeline",
-    }
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "No image path provided. Usage: python predict.py <path_to_image>"}))
-        sys.exit(1)
+        fail("No image path provided. Usage: python predict.py <path_to_image>", EXIT_USAGE)
 
     image_path = sys.argv[1]
     if not os.path.exists(image_path):
-        print(json.dumps({"error": f"Image file not found: {image_path}"}))
-        sys.exit(1)
+        fail(f"Image file not found: {image_path}", EXIT_USAGE)
 
     start_time = time.perf_counter()
-    result = analyze_with_yolo(image_path) or analyze_salt_purity(image_path)
-    elapsed_ms = round((time.perf_counter() - start_time) * 1000, 1)
+    try:
+        result = analyze_with_yolo(image_path)
+    except AnalysisError as exc:
+        print(f"[predict] {exc}", file=sys.stderr)
+        fail(str(exc), exc.exit_code)
+    # imports + model load + prediction + drawing/saving the highlighted copy, as measured here
+    analysis_ms = round((time.perf_counter() - start_time) * 1000, 1)
 
-    is_yolo = result["model_source"] == "yolov8"
-    output = {
-        "model_name": "SALTURE YOLOv8 Impurity Detector" if is_yolo
-        else "SALTURE Impurity Detector (Random Forest + CV)",
-        "annotated_image": result.get("annotated_image"),
-        "model_source": result["model_source"],
-        "predicted_grade": result["predicted_grade"],
-        "quality_tier": result["quality_tier"],
-        "purity_pct": result["purity_pct"],
-        "impurity_pct": result["impurity_pct"],
-        "impurity_count": result["impurity_count"],
-        "salt_crystal_count": result["salt_crystal_count"],
-        "particle_count": result["total_particles"],
-        "contamination_area_pct": result["contamination_area_pct"],
-        "confidence": result["confidence"],
-        "inference_ms": max(14.0, elapsed_ms),
-        "mean_ecd_mm": 1.48,
-        "median_ecd_mm": 1.39,
-        "mean_area_mm2": 1.72,
-        "fractions": {
-            "fine": round(result["purity_pct"] * 0.7, 1),
-            "medium": round(result["purity_pct"] * 0.3, 1),
-            "coarse": round(100.0 - result["purity_pct"], 1),
-        },
-        "glcm_contrast": 0.42,
-        "glcm_homogeneity": 0.78,
-        "glcm_energy": 0.16,
-        "glcm_correlation": 0.84,
-    }
+    print(json.dumps({
+        "model_name": "SALTURE YOLOv8 Impurity Detector",
+        "model_source": "yolov8",
+        **result,
+        "analysis_ms": analysis_ms,
+    }))
 
-    print(json.dumps(output))
 
 if __name__ == "__main__":
     main()

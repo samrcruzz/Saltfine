@@ -21,11 +21,11 @@ import Card from '../components/ui/Card'
 import DataRow from '../components/ui/DataRow'
 import GradeBadge from '../components/ui/GradeBadge'
 import { useToast } from '../components/ui/Toast'
-import { GRADE_META } from '../config'
+import { DEFAULT_BATCH_MASS_G, GRADE_META } from '../config'
 import { usePersistentState } from '../hooks/usePersistentState'
-import { apiUrl, saveRecord, uploadImageFile } from '../services/api'
+import { apiUrl, saveRecord, uploadImageFile, USE_MOCK } from '../services/api'
 import { labStore, type StoredLabItem } from '../services/labStore'
-import type { FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
+import type { PurityGrade, SaltRecord } from '../types/saltfine'
 import { formatConfidence, formatNumber } from '../utils/format'
 
 interface AnalyzedSample {
@@ -36,22 +36,23 @@ interface AnalyzedSample {
   /** backend path of the highlighted image, stored on the record */
   filePath: string
   modelName: string
-  /** false = a fallback produced the numbers, not the YOLOv8 model */
+  /** true = the YOLOv8 model produced the numbers. False only for results kept from an older version. */
   isModelResult: boolean
+  /** true = simulated result from demo mode, not measured */
+  isDemo?: boolean
   particleCount: number
   purityPct: number
   impurityPct: number
   impurityCount: number
   saltCount: number
-  meanEcdMm: number
-  medianEcdMm: number
-  meanAreaMm2: number
-  fractions: SizeFractions
-  predictedGrade: PurityGrade | FinenessGrade
+  predictedGrade: PurityGrade
   confidence: number
+  /** YOLOv8 predict() time (ms), measured */
   inferenceMs: number
-  glcmContrast: number
-  glcmHomogeneity: number
+  /** wall-clock time of the whole analysis on the backend (s), measured. Missing in results from older versions. */
+  processingTimeS?: number
+  /** batch mass entered by the operator when the photo was analyzed (g) */
+  massG?: number
 }
 
 /** One picked image: its file, local preview, analysis status and (once done) its result. */
@@ -107,12 +108,11 @@ const ANALYSIS_CONCURRENCY = 3
 async function analyzeWithModel(
   file: File,
   previewUrl: string,
-  options: { saveToDb?: boolean; sampleCode?: string } = {},
+  options: { saveToDb?: boolean; sampleCode?: string; massG: number },
 ): Promise<AnalyzedSample> {
   const r = await uploadImageFile(file, options)
   const original = apiUrl(r.fileUrl) ?? previewUrl
   const highlighted = apiUrl(r.annotatedFileUrl ?? r.fileUrl) ?? original
-  const purityPct = r.purity_pct ?? 100
   return {
     fileName: r.fileName,
     fileSize: r.fileSize,
@@ -120,22 +120,25 @@ async function analyzeWithModel(
     contourUrl: highlighted,
     filePath: r.annotatedFileUrl ?? r.fileUrl,
     modelName: r.model_name,
-    isModelResult: r.is_model_result ?? false,
+    isModelResult: r.is_model_result === true,
+    isDemo: r.is_demo === true,
     particleCount: r.particle_count,
-    purityPct,
-    impurityPct: r.impurity_pct ?? Number((100 - purityPct).toFixed(2)),
-    impurityCount: r.impurity_count ?? 0,
-    saltCount: r.salt_crystal_count ?? r.particle_count,
-    meanEcdMm: r.mean_ecd_mm,
-    medianEcdMm: r.median_ecd_mm,
-    meanAreaMm2: r.mean_area_mm2,
-    fractions: r.fractions,
+    purityPct: r.purity_pct,
+    impurityPct: r.impurity_pct,
+    impurityCount: r.impurity_count,
+    saltCount: r.salt_crystal_count,
     predictedGrade: r.predicted_grade,
     confidence: r.confidence,
     inferenceMs: r.inference_ms,
-    glcmContrast: r.glcm_contrast,
-    glcmHomogeneity: r.glcm_homogeneity,
+    processingTimeS: r.processing_time_s,
+    massG: options.massG,
   }
+}
+
+/** Weighed batch mass typed by the operator, in grams; null when it is not a positive number. */
+function parseMass(text: string): number | null {
+  const value = Number(text.trim().replace(',', '.'))
+  return text.trim() !== '' && Number.isFinite(value) && value > 0 && value <= 100_000 ? value : null
 }
 
 // Quotes a CSV field when it contains a comma, quote or line break.
@@ -145,12 +148,6 @@ function csvField(value: string | number): string {
 }
 
 const impurityTone = (pct: number): string => (pct <= 0.2 ? 'text-emerald-400' : 'text-amber-400')
-
-const SIZE_FRACTIONS: { key: keyof SizeFractions; label: string }[] = [
-  { key: 'fine', label: 'Fine' },
-  { key: 'medium', label: 'Medium' },
-  { key: 'coarse', label: 'Coarse' },
-]
 
 /** Inspector photo: shows "Loading…" while the (large) image downloads, and the not-found note only if it fails. */
 function InspectorImage({ src, alt }: { src: string; alt: string }) {
@@ -193,6 +190,9 @@ export default function LabAnalysis() {
   const nextId = useRef(1)
   const [selectedId, setSelectedId] = usePersistentState<string | null>('lab.selected', null)
   const [autoSave, setAutoSave] = usePersistentState('lab.autoSave', true)
+  // Weighed batch mass for the next analyses (thesis batches are 100 g)
+  const [massText, setMassText] = usePersistentState('lab.massG', String(DEFAULT_BATCH_MASS_G))
+  const massG = parseMass(massText)
   const [hydrated, setHydrated] = useState(false)
   const storedRef = useRef(new Map<string, QueueItem>())
 
@@ -317,7 +317,8 @@ export default function LabAnalysis() {
 
   // Analyzes the given images a few at a time; each card and row updates as soon as its image finishes.
   const runAnalysis = async (ids: string[]) => {
-    if (ids.length === 0 || running) return
+    if (ids.length === 0 || running || massG === null) return
+    const batchMassG = massG
     const total = ids.length
     const saveToDb = autoSave
     const stamp = String(Date.now()).slice(-6)
@@ -350,6 +351,7 @@ export default function LabAnalysis() {
           const result = await analyzeWithModel(item.file, item.previewUrl, {
             saveToDb,
             sampleCode: `LAB-${stamp}-${String(index + 1).padStart(2, '0')}`,
+            massG: batchMassG,
           })
           succeeded++
           patchItem(item.id, { status: 'done', result, saved: saveToDb })
@@ -375,7 +377,7 @@ export default function LabAnalysis() {
     } else if (failed > 0) {
       showToast(`${plural(succeeded)} analyzed${savedNote}, ${failed} failed`, { tone: 'error' })
     } else {
-      showToast(`${plural(succeeded)} analyzed with YOLOv8${savedNote}`)
+      showToast(`${plural(succeeded)} analyzed${USE_MOCK ? ' (demo: simulated results)' : ' with YOLOv8'}${savedNote}`)
     }
   }
 
@@ -402,24 +404,24 @@ export default function LabAnalysis() {
   const runIdSet = new Set(runIds)
   const tableItems = items.filter((i) => i.status !== 'queued' || (running && runIdSet.has(i.id)))
 
-  // Save the inspected sample to the Salt Records DB (only needed when auto-save was off)
+  // Save the inspected sample to the Salt Records DB (only needed when auto-save was off).
+  // Only measured values go in: the model output, its measured processing time and the operator's batch mass.
+  const canLogSample =
+    !!sample && (sample.isModelResult || !!sample.isDemo) && Number.isFinite(sample.processingTimeS)
   const handleLogSampleToDb = async () => {
-    if (!selectedItem || !sample || selectedItem.saved) return
+    if (!selectedItem || !sample || selectedItem.saved || !canLogSample) return
     const id = Date.now() % 10000
     const newRecord: SaltRecord = {
       record_id: id,
       model_name: sample.modelName,
       predicted_grade: sample.predictedGrade,
       purity_pct: sample.purityPct,
-      impurity_pct: sample.impurityPct ?? Number((100 - sample.purityPct).toFixed(2)),
+      impurity_pct: sample.impurityPct,
       impurity_count: sample.impurityCount,
       salt_crystal_count: sample.saltCount,
       contamination_area_pct: sample.impurityPct,
-      quality_tier: sample.predictedGrade as PurityGrade,
+      quality_tier: sample.predictedGrade,
       confidence: sample.confidence,
-      est_fine_pct: sample.fractions.fine,
-      est_medium_pct: sample.fractions.medium,
-      est_coarse_pct: sample.fractions.coarse,
       inference_ms: sample.inferenceMs,
       classified_at: new Date().toISOString(),
       batch_id: id,
@@ -429,18 +431,12 @@ export default function LabAnalysis() {
       file_path: sample.filePath,
       captured_at: new Date().toISOString(),
       particle_count: sample.particleCount,
-      mean_area_mm2: sample.meanAreaMm2,
-      mean_ecd_mm: sample.meanEcdMm,
-      median_ecd_mm: sample.medianEcdMm,
-      glcm_contrast: sample.glcmContrast,
-      glcm_homogeneity: sample.glcmHomogeneity,
-      glcm_energy: 0.14,
-      glcm_correlation: 0.82,
       sorting_id: id,
       container_grade: sample.predictedGrade,
-      mass_g: 250,
-      processing_time_s: 14.5,
+      mass_g: sample.massG ?? DEFAULT_BATCH_MASS_G,
+      processing_time_s: sample.processingTimeS!,
       sorted_at: new Date().toISOString(),
+      ...(sample.isDemo ? { is_demo: true } : {}),
     }
 
     try {
@@ -457,13 +453,14 @@ export default function LabAnalysis() {
     if (doneItems.length === 0) return
     const header = [
       'Filename', 'Predicted_Grade', 'Purity_Pct', 'Impurity_Pct', 'Impurity_Count', 'Salt_Crystal_Count',
-      'Confidence_Pct', 'Particle_Count', 'Fine_Pct', 'Medium_Pct', 'Coarse_Pct', 'Mean_ECD_mm', 'Inference_ms', 'Saved_To_Log',
+      'Confidence_Pct', 'Particle_Count', 'Inference_ms', 'Processing_Time_s', 'Mass_g', 'Data_Source', 'Saved_To_Log',
     ]
     const rows = doneItems.map(({ result: r, saved }) =>
       [
         r!.fileName, r!.predictedGrade, r!.purityPct, r!.impurityPct, r!.impurityCount, r!.saltCount,
-        (r!.confidence * 100).toFixed(1), r!.particleCount, r!.fractions.fine, r!.fractions.medium, r!.fractions.coarse,
-        r!.meanEcdMm, r!.inferenceMs, saved ? 'yes' : 'no',
+        (r!.confidence * 100).toFixed(1), r!.particleCount, r!.inferenceMs, r!.processingTimeS ?? '', r!.massG ?? '',
+        r!.isDemo ? 'demo (simulated)' : r!.isModelResult ? 'yolov8' : 'not the model (older version)',
+        saved ? 'yes' : 'no',
       ].map(csvField).join(','),
     )
     const blob = new Blob([[header.join(','), ...rows].join('\n')], { type: 'text/csv' })
@@ -546,6 +543,25 @@ export default function LabAnalysis() {
                 Save results to Salt-Record Log
               </label>
 
+              <label className="flex items-center gap-2 text-xs text-ink-700">
+                Batch mass
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.1"
+                  value={massText}
+                  onChange={(e) => setMassText(e.target.value)}
+                  disabled={running}
+                  aria-invalid={massG === null}
+                  className={`w-20 rounded-md border bg-canvas px-2 py-1 font-mono text-xs text-ink-900 ${
+                    massG === null ? 'border-rose-500' : 'border-line'
+                  }`}
+                />
+                g
+                {massG === null && <span className="text-rose-400">Enter the weighed mass in grams</span>}
+              </label>
+
               <div className="flex flex-wrap gap-2">
                 {running ? (
                   <Button variant="secondary" icon={Square} onClick={stopAnalysis} disabled={stopping}>
@@ -553,7 +569,7 @@ export default function LabAnalysis() {
                   </Button>
                 ) : (
                   failedIds.length > 0 && (
-                    <Button variant="secondary" icon={RotateCcw} onClick={() => runAnalysis(failedIds)}>
+                    <Button variant="secondary" icon={RotateCcw} onClick={() => runAnalysis(failedIds)} disabled={massG === null}>
                       Retry {failedIds.length} failed
                     </Button>
                   )
@@ -562,7 +578,7 @@ export default function LabAnalysis() {
                   variant="primary"
                   icon={running ? Loader2 : Play}
                   onClick={() => runAnalysis(queuedIds)}
-                  disabled={running || queuedIds.length === 0}
+                  disabled={running || queuedIds.length === 0 || massG === null}
                 >
                   {running
                     ? `Analyzing ${progress.done} / ${progress.total}…`
@@ -626,11 +642,17 @@ export default function LabAnalysis() {
                     </div>
                   </div>
 
-                  {!sample.isModelResult && (
-                    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
-                      These numbers did not come from the YOLOv8 model ({sample.modelName}). Check that the backend is
-                      running and ml_service/models/saltfine_yolov8.pt exists.
+                  {sample.isDemo ? (
+                    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-300">
+                      Demo mode: this result is simulated from the file name, not measured by the model.
                     </div>
+                  ) : (
+                    !sample.isModelResult && (
+                      <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+                        This result was kept from an older version and did not come from the YOLOv8 model ({sample.modelName}).
+                        Do not use it: remove it and analyze the photo again.
+                      </div>
+                    )
                   )}
 
                   {/* Display Viewport */}
@@ -670,29 +692,15 @@ export default function LabAnalysis() {
                   </DataRow>
                   <DataRow label="Model Confidence">{formatConfidence(sample.confidence)}</DataRow>
                   <DataRow label="Inference Latency">{Math.round(sample.inferenceMs)} ms</DataRow>
+                  <DataRow label="Processing Time">
+                    {Number.isFinite(sample.processingTimeS) ? `${sample.processingTimeS!.toFixed(2)} s` : '—'}
+                  </DataRow>
                   <DataRow label="Particle Count">{formatNumber(sample.particleCount)} detected</DataRow>
-                  <DataRow label="Mean Equivalent Diameter">{sample.meanEcdMm} mm</DataRow>
-                  <DataRow label="GLCM Contrast (Texture)">{sample.glcmContrast}</DataRow>
-                  <DataRow label="GLCM Homogeneity">{sample.glcmHomogeneity}</DataRow>
+                  <DataRow label="Salt Crystals / Impurities">
+                    {formatNumber(sample.saltCount)} / {formatNumber(sample.impurityCount)}
+                  </DataRow>
+                  <DataRow label="Batch Mass">{sample.massG !== undefined ? `${formatNumber(sample.massG, 1)} g` : '—'}</DataRow>
                 </dl>
-
-                <div className="mt-5 space-y-2.5 border-t border-line pt-4">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-ink-500">Estimated Size Fractions</div>
-                  {SIZE_FRACTIONS.map(({ key, label }) => {
-                    const val = sample.fractions[key] ?? 0
-                    return (
-                      <div key={key} className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-ink-700">{label}</span>
-                          <span className="font-mono text-ink-900">{val}%</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-line-soft">
-                          <div className="h-full rounded-full bg-brine-600" style={{ width: `${Math.min(100, Math.max(0, val))}%` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
 
                 <div className="mt-6">
                   <Button
@@ -700,7 +708,7 @@ export default function LabAnalysis() {
                     className="w-full"
                     icon={CheckCircle2}
                     onClick={handleLogSampleToDb}
-                    disabled={selectedItem.saved}
+                    disabled={selectedItem.saved || !canLogSample}
                   >
                     {selectedItem.saved ? 'Saved to Salt-Record Log' : 'Log Sample to Salt-Record Log'}
                   </Button>
@@ -745,9 +753,8 @@ export default function LabAnalysis() {
                     <th className="px-3 py-2.5 text-right">Impurities</th>
                     <th className="px-3 py-2.5 text-right">Confidence</th>
                     <th className="px-3 py-2.5 text-right">Particles</th>
-                    <th className="px-3 py-2.5 text-right">Mean ECD</th>
-                    <th className="px-3 py-2.5 text-right">Fractions (F / M / C)</th>
                     <th className="px-3 py-2.5 text-right">Latency</th>
+                    <th className="px-3 py-2.5 text-right">Processing</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line-soft">
@@ -782,14 +789,13 @@ export default function LabAnalysis() {
                             </td>
                             <td className="px-3 py-2 text-right tabular-nums">{formatConfidence(r.confidence)}</td>
                             <td className="px-3 py-2 text-right tabular-nums">{r.particleCount}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{r.meanEcdMm} mm</td>
-                            <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-ink-600">
-                              {r.fractions.fine}% / {r.fractions.medium}% / {r.fractions.coarse}%
-                            </td>
                             <td className="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-ink-500">{Math.round(r.inferenceMs)} ms</td>
+                            <td className="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-ink-500">
+                              {Number.isFinite(r.processingTimeS) ? `${r.processingTimeS!.toFixed(2)} s` : '—'}
+                            </td>
                           </>
                         ) : (
-                          <td colSpan={7} className="px-3 py-2 text-xs">
+                          <td colSpan={6} className="px-3 py-2 text-xs">
                             {item.status === 'failed' ? (
                               <span className="text-rose-400">Failed: {item.error}</span>
                             ) : item.status === 'analyzing' ? (

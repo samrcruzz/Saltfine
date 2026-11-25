@@ -18,12 +18,6 @@ export interface GradeMetaItem {
 
 export type GradeMetaMap = Record<PurityGrade | 'Fine' | 'Medium' | 'Coarse', GradeMetaItem>
 
-export interface SizeFractions {
-  fine: number
-  medium: number
-  coarse: number
-}
-
 export interface SaltRecord {
   // classifications
   record_id: number
@@ -36,10 +30,7 @@ export interface SaltRecord {
   contamination_area_pct: number  // % of total area covered by impurities
   quality_tier?: PurityGrade
   confidence: number
-  est_fine_pct: number
-  est_medium_pct: number
-  est_coarse_pct: number
-  inference_ms: number
+  inference_ms: number            // YOLOv8 predict() time on the photo (ms), measured
   classified_at: string
 
   // batches
@@ -53,30 +44,17 @@ export interface SaltRecord {
   captured_at: string
 
   // particle_features
-  particle_count: number
-  mean_area_mm2: number
-  mean_ecd_mm: number
-  median_ecd_mm: number
-  glcm_contrast: number
-  glcm_homogeneity: number
-  glcm_energy: number
-  glcm_correlation: number
+  particle_count: number          // salt crystals + impurities detected by YOLOv8
 
   // sorting_records
   sorting_id: number
   container_grade: PurityGrade | FinenessGrade | string
-  mass_g: number
-  processing_time_s: number
+  mass_g: number                  // batch mass entered by the operator (default 100 g)
+  processing_time_s: number       // measured wall-clock time of the image analysis (s)
   sorted_at: string
 
-  // optional ground truth for validation
-  sieve_ground_truth?: {
-    fine_g: number
-    medium_g: number
-    coarse_g: number
-    dominant_grade: string
-    is_match: boolean
-  }
+  /** true = simulated demo record (mock mode / SEED_DEMO_DATA), not measured from a photo */
+  is_demo?: boolean
 }
 
 export interface FilterState {

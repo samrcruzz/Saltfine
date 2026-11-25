@@ -92,7 +92,7 @@ export interface PredictedGradeCardProps {
 }
 
 export default function PredictedGradeCard({ record }: PredictedGradeCardProps) {
-  const impurityPct = record.impurity_pct ?? Number((100 - (record.purity_pct ?? 99.88)).toFixed(2))
+  const impurityPct = record.impurity_pct
 
   return (
     <Card title="Impurities & Quality Classification">
@@ -114,7 +114,7 @@ export default function PredictedGradeCard({ record }: PredictedGradeCardProps) 
           {record.sample_code} / {formatBatchId(record.batch_id)}
         </DataRow>
         <DataRow label="Classifier Engine" mono>
-          {record.model_name || 'SALTURE Impurity Detector'} · {record.inference_ms.toFixed(0)} ms
+          {record.model_name} · {record.inference_ms.toFixed(0)} ms
         </DataRow>
       </dl>
     </Card>

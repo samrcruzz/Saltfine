@@ -2,6 +2,7 @@ import React from 'react'
 import { useNow } from '../../hooks/useNow'
 import type { SaltRecord } from '../../types/saltfine'
 import { formatBatchId, formatDateTime, formatRelative } from '../../utils/format'
+import DemoBadge from '../ui/DemoBadge'
 
 interface ItemProps {
   label: string
@@ -36,6 +37,7 @@ export default function BatchStrip({ record }: BatchStripProps) {
     <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-line bg-panel px-5 py-3.5 sm:grid-cols-[1fr_1fr_1.8fr_1fr]">
       <Item label="Batch ID" mono>
         {formatBatchId(record.batch_id)}
+        {record.is_demo && <DemoBadge className="ml-2 align-middle" />}
       </Item>
       <Item label="Sample ID" mono>
         {record.sample_code}

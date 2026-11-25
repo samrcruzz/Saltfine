@@ -23,5 +23,6 @@ Place your trained MobileNetV2 model files in this folder.
 
 ### Automatic Detection:
 When `predict.py` executes:
-- If a model file exists in this directory, it loads the model and runs deep learning inference.
-- If no model is placed here yet, it automatically falls back to the deterministic Computer Vision heuristic pipeline so the dashboard remains fully operational without throwing errors.
+- It loads `saltfine_yolov8.pt` from this directory and runs YOLOv8 detection on the photo.
+- If the weights are missing or the model cannot be loaded, it prints `{"error": ...}` and exits non-zero. There is
+  no fallback: the backend reports the error and saves no record, so no made-up result is ever recorded.

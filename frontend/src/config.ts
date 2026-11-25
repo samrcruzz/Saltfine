@@ -2,6 +2,17 @@
 
 import type { FinenessGrade, GradeMetaMap, PurityGrade } from './types/saltfine'
 
+// Demo mode: the dashboard runs without a backend on SIMULATED data (src/mockData), clearly labelled as demo.
+// Off unless VITE_DEMO_MODE=true, so real results are never mixed up with simulated ones.
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+// Backend API (default http://localhost:5000). Not used in demo mode.
+export const API_BASE_URL = DEMO_MODE
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/+$/, '')
+
+// Batch size of the thesis set-up: each photographed batch is 100 g unless the operator enters another mass.
+export const DEFAULT_BATCH_MASS_G = 100
+
 export const APP_NAME = 'SALTURE'
 export const APP_TAGLINE = 'Sea Salt Fineness Classification System'
 // Shown under the name in the dashboard sidebar and top bar (the sign-in page keeps APP_TAGLINE).

@@ -63,7 +63,7 @@ export interface SortingCardProps {
 }
 
 export default function SortingCard({ record }: SortingCardProps) {
-  const impurityPct = record.impurity_pct ?? Number((100 - (record.purity_pct ?? 99.88)).toFixed(2))
+  const impurityPct = record.impurity_pct
   const destination =
     impurityPct <= 0.20
       ? 'Bin 1: Preprocessed Food Goods (≤ 0.20%)'
@@ -81,13 +81,14 @@ export default function SortingCard({ record }: SortingCardProps) {
         <DataRow label="Target Destination">
           <span className="font-semibold text-ink-900">{destination}</span>
         </DataRow>
-        <DataRow label="Batch Net Mass">
+        <DataRow label="Batch Net Mass (entered)">
           {formatNumber(record.mass_g, 1)} g
           <span className="ml-2 text-sm font-normal text-ink-500">
             ({gramsToKg(record.mass_g).toFixed(3)} kg)
           </span>
         </DataRow>
-        <DataRow label="Actuation Cycle Time">{record.processing_time_s.toFixed(1)} s</DataRow>
+        {/* measured image-analysis time; the servo/conveyor is not timed yet */}
+        <DataRow label="Analysis Processing Time">{record.processing_time_s.toFixed(2)} s</DataRow>
       </dl>
     </Card>
   )

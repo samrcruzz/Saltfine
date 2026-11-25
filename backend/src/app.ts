@@ -6,7 +6,7 @@ import authRouter from './routes/auth'
 import recordsRouter from './routes/records'
 import analyzeRouter from './routes/analyze'
 import cycleRouter from './routes/cycle'
-import { dbService } from './db'
+import { dbService, SEED_DEMO_DATA } from './db'
 
 // Who may do what:
 //   viewer  sign in, see live results, records, reports and images
@@ -34,6 +34,8 @@ export function createApp() {
       version: '1.0.0-ts',
       // 'postgresql' = records are saved; 'memory' = PostgreSQL is not connected, records are lost on restart
       database: dbService.isPostgres() ? 'postgresql' : 'memory',
+      // true = SEED_DEMO_DATA is on: simulated demo records are mixed into the in-memory store
+      demo_data: SEED_DEMO_DATA,
       timestamp: new Date().toISOString(),
     })
   })

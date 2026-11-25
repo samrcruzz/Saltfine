@@ -2,16 +2,16 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { SaltRecord } from '../../types/saltfine'
 import Card from '../ui/Card'
 
-export interface SizeFractionsCardProps {
+export interface ImpurityBreakdownCardProps {
   record: SaltRecord
 }
 
 // Visual breakdown of pure salt crystal ratio vs detected foreign insoluble impurities
-export default function SizeFractionsCard({ record }: SizeFractionsCardProps) {
-  const impurityPct = record.impurity_pct ?? Number((100 - (record.purity_pct ?? 99.88)).toFixed(2))
+export default function ImpurityBreakdownCard({ record }: ImpurityBreakdownCardProps) {
+  const impurityPct = record.impurity_pct
   const purityPct = Number((100 - impurityPct).toFixed(2))
-  const impurityCount = record.impurity_count ?? Math.max(1, Math.round(record.particle_count * (impurityPct / 100) * 14))
-  const saltCount = record.salt_crystal_count ?? (record.particle_count - impurityCount)
+  const impurityCount = record.impurity_count
+  const saltCount = record.salt_crystal_count
 
   const isFoodGrade = impurityPct <= 0.20
 

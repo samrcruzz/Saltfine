@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthProvider'
 import { useNow } from '../../hooks/useNow'
 import { AUTH_ENABLED, ROLE_LABEL } from '../../services/auth'
 import { simulation } from '../../mockData/mockStore'
-import { usePolledQuery } from '../../hooks/usePolledQuery'
+import { usePolledQuery, type QueryState } from '../../hooks/usePolledQuery'
 import { getHealth, USE_MOCK, type ServerHealth } from '../../services/api'
 import { formatDateTime } from '../../utils/format'
 
@@ -20,13 +20,10 @@ function Clock() {
 // How often the header re-checks that the backend and PostgreSQL are up
 const HEALTH_POLL_MS = 15_000
 
-function FeedStatus({ connectedLabel }: { connectedLabel: string }) {
+type HealthQuery = QueryState<ServerHealth>
+
+function FeedStatus({ connectedLabel, health }: { connectedLabel: string; health: HealthQuery }) {
   const running = useSyncExternalStore(simulation.subscribe, simulation.isRunning)
-  // Real status (not a fixed label), so a stopped backend or a lost database shows up before a demo goes wrong
-  // No `signature`: every poll must update, so "offline" clears as soon as the server is back
-  const health = usePolledQuery<ServerHealth>(() => (USE_MOCK ? Promise.resolve({}) : getHealth()), [], {
-    intervalMs: HEALTH_POLL_MS,
-  })
 
   if (!USE_MOCK) {
     const offline = health.error != null
@@ -55,7 +52,7 @@ function FeedStatus({ connectedLabel }: { connectedLabel: string }) {
           className={`size-2.5 rounded-full ${running ? 'animate-pulse-dot bg-brine-500' : 'bg-ink-400'}`}
           aria-hidden="true"
         />
-        {running ? 'Simulated feed running' : 'Simulated feed paused'}
+        {running ? 'Demo: simulated feed running' : 'Demo: simulated feed paused'}
       </span>
       <button
         type="button"
@@ -102,17 +99,39 @@ export interface HeaderProps {
   connectedLabel: string
 }
 
+// Shown whenever simulated data can appear, so it is never taken for measured results
+function DemoBanner({ health }: { health: HealthQuery }) {
+  const message = USE_MOCK
+    ? 'Demo mode: every result on this dashboard is simulated, not measured from a photo. Unset VITE_DEMO_MODE to use the backend and the YOLOv8 model.'
+    : health.data?.demo_data
+      ? 'Demo records loaded (SEED_DEMO_DATA=true on the backend): records marked DEMO are simulated, not measured. Do not use them for evaluation.'
+      : null
+  if (!message) return null
+  return (
+    <div role="alert" className="border-t border-amber-500/40 bg-amber-500/15 px-4 py-2 text-[0.8rem] font-semibold text-amber-300 sm:px-5 lg:px-8">
+      {message}
+    </div>
+  )
+}
+
 export default function Header({ title, connectedLabel }: HeaderProps) {
+  // Real status (not a fixed label), so a stopped backend or a lost database shows up before a demo goes wrong
+  // No `signature`: every poll must update, so "offline" clears as soon as the server is back
+  const health = usePolledQuery<ServerHealth>(() => (USE_MOCK ? Promise.resolve({}) : getHealth()), [], {
+    intervalMs: HEALTH_POLL_MS,
+  })
+
   return (
     <header className="border-b border-line bg-panel xl:sticky xl:top-0 xl:z-20">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-5 lg:px-8">
         <h1 className="text-xl font-semibold tracking-tight text-ink-900 sm:text-[1.4rem]">{title}</h1>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <FeedStatus connectedLabel={connectedLabel} />
+          <FeedStatus connectedLabel={connectedLabel} health={health} />
           <Clock />
           <UserMenu />
         </div>
       </div>
+      <DemoBanner health={health} />
     </header>
   )
 }

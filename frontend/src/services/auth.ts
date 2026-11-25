@@ -8,10 +8,12 @@ export interface SessionUser {
   role: Role
 }
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
+import { API_BASE_URL, DEMO_MODE } from '../config'
 
-// Mock mode (no backend): nothing to sign in to, everything is visible.
-export const AUTH_ENABLED = Boolean(BASE_URL)
+const BASE_URL = API_BASE_URL
+
+// Demo mode (no backend): nothing to sign in to, everything is visible.
+export const AUTH_ENABLED = !DEMO_MODE
 export const MOCK_USER: SessionUser = { username: 'demo', role: 'dev' }
 
 // Fired by any API call that gets a 401, so the app can return to the sign-in page.

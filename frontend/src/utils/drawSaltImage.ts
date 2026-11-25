@@ -1,4 +1,4 @@
-// Draws a simulated "captured image" of crushed salt on the spreading plate.
+// Draws a simulated "captured image" of crushed salt on the spreading plate (demo mode only).
 
 import { CLASS_AREA_MM2 } from '../mockData/generateRecords'
 import type { FinenessGrade, SaltRecord } from '../types/saltfine'
@@ -14,20 +14,21 @@ const PX_PER_MM = IMAGE_WIDTH / FIELD_OF_VIEW_MM
 
 interface ParticleClassDef {
   grade: FinenessGrade
-  key: 'est_coarse_pct' | 'est_medium_pct' | 'est_fine_pct'
+  /** area share (%) of this size class in the simulated picture: illustration only, not a measurement */
+  sharePct: number
   min: number
   max: number
 }
 
 // Drawn largest first so smaller crystals settle around the big ones.
 const CLASSES: ParticleClassDef[] = [
-  { grade: 'Coarse', key: 'est_coarse_pct', min: 2.0, max: 4.0 },
-  { grade: 'Medium', key: 'est_medium_pct', min: 1.0, max: 1.99 },
-  { grade: 'Fine', key: 'est_fine_pct', min: 0.2, max: 0.99 },
+  { grade: 'Coarse', sharePct: 10, min: 2.0, max: 4.0 },
+  { grade: 'Medium', sharePct: 60, min: 1.0, max: 1.99 },
+  { grade: 'Fine', sharePct: 30, min: 0.2, max: 0.99 },
 ]
 
 function countsPerClass(record: SaltRecord): number[] {
-  const weights = CLASSES.map((cls) => record[cls.key] / CLASS_AREA_MM2[cls.grade])
+  const weights = CLASSES.map((cls) => cls.sharePct / CLASS_AREA_MM2[cls.grade])
   const total = weights.reduce((sum, weight) => sum + weight, 0) || 1
   return weights.map((weight) => Math.round((record.particle_count * weight) / total))
 }

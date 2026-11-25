@@ -1,15 +1,18 @@
 // Data access layer for SALTURE fullstack PERN application.
 
+import { API_BASE_URL, DEFAULT_BATCH_MASS_G, DEMO_MODE } from '../config'
+import { MODEL_NAME as DEMO_MODEL_NAME } from '../mockData/generateRecords'
 import { mockDb, simulation } from '../mockData/mockStore'
-import type { FilterState, FinenessGrade, PurityGrade, SaltRecord, SizeFractions } from '../types/saltfine'
+import type { FilterState, PurityGrade, SaltRecord } from '../types/saltfine'
 import { EMPTY_FILTERS } from '../utils/filters'
 import { notifyUnauthorized } from './auth'
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
+const BASE_URL = API_BASE_URL
 
-export const USE_MOCK = !BASE_URL
+/** Demo mode (VITE_DEMO_MODE=true): simulated data, no backend. Everything it shows is labelled as demo. */
+export const USE_MOCK = DEMO_MODE
 
-// In mock mode only, start producing simulated sorting cycles.
+// In demo mode only, start producing simulated sorting cycles.
 if (USE_MOCK) simulation.start()
 
 const MOCK_LATENCY_MS = 120
@@ -52,6 +55,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export interface ServerHealth {
   /** 'postgresql' = records are saved; 'memory' = PostgreSQL is not connected (records are lost on restart) */
   database?: 'postgresql' | 'memory'
+  /** true = the backend was started with SEED_DEMO_DATA=true: simulated demo records are in the store */
+  demo_data?: boolean
 }
 
 /** Backend health, for the status in the page header. Throws when the server cannot be reached. */
@@ -131,8 +136,9 @@ export async function triggerNewCycle(): Promise<SaltRecord> {
 export async function saveRecord(record: SaltRecord): Promise<SaltRecord> {
   if (USE_MOCK) {
     await wait(MOCK_LATENCY_MS)
-    simulation.addCustomRecord(record)
-    return record
+    const demoRecord = { ...record, is_demo: true }
+    simulation.addCustomRecord(demoRecord)
+    return demoRecord
   }
   return request<SaltRecord>('/api/records', { method: 'POST', body: record })
 }
@@ -141,41 +147,41 @@ export interface UploadResult {
   fileName: string
   fileSize: string
   fileUrl: string
-  /** YOLOv8 red (impurity) / green (salt) highlighted copy; equals fileUrl when no model ran */
+  /** YOLOv8 red (impurity) / green (salt) highlighted copy */
   annotatedFileUrl?: string
   storedFilename?: string
   record?: SaltRecord
   model_name: string
-  /** 'yolov8' when the trained model produced the result */
-  model_source?: string
-  /** false = a fallback (not the YOLOv8 model) produced these numbers */
-  is_model_result?: boolean
-  predicted_grade: FinenessGrade | PurityGrade
-  quality_tier?: PurityGrade
-  purity_pct?: number
-  impurity_pct?: number
-  impurity_count?: number
-  salt_crystal_count?: number
-  contamination_area_pct?: number
+  /** 'yolov8' for every real result (the backend has no fallback); 'demo' in demo mode */
+  model_source: string
+  /** true = the YOLOv8 model produced these numbers */
+  is_model_result: boolean
+  /** true = simulated demo result (demo mode), not measured */
+  is_demo?: boolean
+  predicted_grade: PurityGrade
+  quality_tier: PurityGrade
+  purity_pct: number
+  impurity_pct: number
+  impurity_count: number
+  salt_crystal_count: number
+  contamination_area_pct: number
   confidence: number
-  fractions: SizeFractions
   particle_count: number
-  mean_ecd_mm: number
-  median_ecd_mm: number
-  mean_area_mm2: number
+  /** YOLOv8 predict() time on this photo (ms), measured */
   inference_ms: number
-  glcm_contrast: number
-  glcm_homogeneity: number
-  glcm_energy: number
-  glcm_correlation: number
+  /** measured wall-clock time of the whole analysis on the backend (s) */
+  processing_time_s: number
 }
 
-// Upload image file to Express backend and optionally auto-save directly into the Salt Records DB
+// Upload image file to Express backend and optionally auto-save directly into the Salt Records DB.
+// massG = weighed batch mass in grams (the backend uses 100 g when it is not given).
+// Throws with the backend's message when the model cannot grade the photo; nothing is saved then.
 export async function uploadImageFile(
   file: File,
-  options: { saveToDb?: boolean; sampleCode?: string } = {}
+  options: { saveToDb?: boolean; sampleCode?: string; massG?: number } = {}
 ): Promise<UploadResult> {
   if (USE_MOCK) {
+    // DEMO MODE: a simulated result derived from the file name. Not measured; flagged is_demo everywhere.
     await wait(150)
     const hash = Array.from(file.name).reduce((acc, c) => acc + c.charCodeAt(0), 0)
     const roll = (hash % 100) / 100
@@ -195,8 +201,10 @@ export async function uploadImageFile(
     const impurity_count = Math.max(1, Math.round(particle_count * (impurity_pct / 100) * 14))
     const salt_crystal_count = particle_count - impurity_count
     const contamination_area_pct = impurity_pct
+    const confidence = 0.94
+    const inference_ms = 18.5
+    const processing_time_s = 1.2
 
-    const ecd = 1.48
     const id = (Date.now() % 90000) + Math.floor(Math.random() * 1000)
     const mockRec: SaltRecord = {
       record_id: id,
@@ -206,7 +214,7 @@ export async function uploadImageFile(
       image_id: id,
       file_path: URL.createObjectURL(file),
       captured_at: new Date().toISOString(),
-      model_name: 'SALTURE Impurity Detector',
+      model_name: DEMO_MODEL_NAME,
       predicted_grade: grade,
       quality_tier: grade,
       purity_pct,
@@ -214,25 +222,16 @@ export async function uploadImageFile(
       impurity_count,
       salt_crystal_count,
       contamination_area_pct,
-      confidence: 0.94,
-      est_fine_pct: 70,
-      est_medium_pct: 25,
-      est_coarse_pct: 5,
-      inference_ms: 18.5,
+      confidence,
+      inference_ms,
       classified_at: new Date().toISOString(),
       particle_count,
-      mean_area_mm2: Number(((Math.PI / 4) * ecd ** 2).toFixed(3)),
-      mean_ecd_mm: ecd,
-      median_ecd_mm: Number((ecd * 0.94).toFixed(2)),
-      glcm_contrast: 0.42,
-      glcm_homogeneity: 0.78,
-      glcm_energy: 0.16,
-      glcm_correlation: 0.84,
       sorting_id: id,
       container_grade: grade,
-      mass_g: Number((180 + (id % 200)).toFixed(1)),
-      processing_time_s: 1.2,
+      mass_g: options.massG ?? DEFAULT_BATCH_MASS_G,
+      processing_time_s,
       sorted_at: new Date().toISOString(),
+      is_demo: true,
     }
     if (options.saveToDb) {
       simulation.addCustomRecord(mockRec)
@@ -241,25 +240,22 @@ export async function uploadImageFile(
       fileName: file.name,
       fileSize: `${(file.size / 1024).toFixed(1)} KB`,
       fileUrl: mockRec.file_path,
-      record: mockRec,
-      model_name: 'SALTURE Impurity Detector',
+      record: options.saveToDb ? mockRec : undefined,
+      model_name: DEMO_MODEL_NAME,
+      model_source: 'demo',
+      is_model_result: false,
+      is_demo: true,
       predicted_grade: grade,
       quality_tier: grade,
       purity_pct,
+      impurity_pct,
       impurity_count,
       salt_crystal_count,
       contamination_area_pct,
-      confidence: 0.94,
-      fractions: { fine: 70, medium: 25, coarse: 5 },
+      confidence,
       particle_count,
-      mean_ecd_mm: mockRec.mean_ecd_mm,
-      median_ecd_mm: mockRec.median_ecd_mm,
-      mean_area_mm2: mockRec.mean_area_mm2,
-      inference_ms: mockRec.inference_ms,
-      glcm_contrast: mockRec.glcm_contrast,
-      glcm_homogeneity: mockRec.glcm_homogeneity,
-      glcm_energy: mockRec.glcm_energy,
-      glcm_correlation: mockRec.glcm_correlation,
+      inference_ms,
+      processing_time_s,
     }
   }
 
@@ -267,6 +263,7 @@ export async function uploadImageFile(
   formData.append('image', file)
   if (options.saveToDb) formData.append('saveToDb', 'true')
   if (options.sampleCode) formData.append('sampleCode', options.sampleCode)
+  if (options.massG !== undefined) formData.append('massG', String(options.massG))
 
   const response = await fetch(`${BASE_URL}/api/analyze/upload`, {
     method: 'POST',
