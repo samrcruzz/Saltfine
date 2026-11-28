@@ -56,6 +56,13 @@ EVAL_IMGSZ = 1280  # same size the app uses for inference
 TOL = 0.005        # metric differences smaller than this count as a tie
 
 
+def best_device() -> str:
+    """'0' (first NVIDIA GPU) when the CUDA build of PyTorch sees one, else 'cpu'."""
+    import torch
+
+    return "0" if torch.cuda.is_available() else "cpu"
+
+
 def rel(p: Path) -> str:
     return Path(os.path.relpath(p, REPO)).as_posix()
 
@@ -223,7 +230,7 @@ def archive_live(note: str) -> dict:
 def evaluate(weights: Path, data_yaml: Path) -> dict:
     from ultralytics import YOLO
 
-    m = YOLO(str(weights)).val(data=str(data_yaml), imgsz=EVAL_IMGSZ, max_det=1000, device="cpu",
+    m = YOLO(str(weights)).val(data=str(data_yaml), imgsz=EVAL_IMGSZ, max_det=1000, device=best_device(), workers=0,
                                plots=False, verbose=False, project=str(BASE / "runs" / "eval"), exist_ok=True)
     names = m.names
     out = {"mAP50": float(m.box.map50), "mAP50-95": float(m.box.map)}
@@ -265,9 +272,10 @@ def cmd_finetune(a):
     data_yaml = build_split(DEFAULT_OUT)
     archive_live("live model before fine-tune")
     name = datetime.now().strftime("finetune_%Y%m%d_%H%M%S")
-    print(f"[*] fine-tuning from {rel(LIVE)}: {a.epochs} epochs, lr0={a.lr0} -> runs/{name}")
+    device = a.device or best_device()
+    print(f"[*] fine-tuning from {rel(LIVE)}: {a.epochs} epochs, lr0={a.lr0}, device={device} -> runs/{name}")
     model = YOLO(str(LIVE))
-    model.train(data=str(data_yaml), epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=a.device,
+    model.train(data=str(data_yaml), epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=device,
                 workers=a.workers, patience=max(10, a.epochs // 2),
                 # explicit optimizer: with optimizer="auto" Ultralytics IGNORES lr0 and uses its
                 # from-scratch rate (AdamW 0.00167), which overwrites what the model learned
@@ -357,7 +365,7 @@ def cmd_auto(a):
     if reached(a.batch, "trained"):
         print(f"[*] {a.batch} is already trained. To train again on all batches: python pipeline.py finetune")
         return
-    run, ok = cmd_finetune(ns(epochs=a.epochs, lr0=a.lr0, imgsz=a.imgsz, batch=8, device="cpu", workers=4))
+    run, ok = cmd_finetune(ns(epochs=a.epochs, lr0=a.lr0, imgsz=a.imgsz, batch=8, device=best_device(), workers=0))
     if ok and not a.no_promote:
         install(run / "weights" / "best.pt", f"promoted from {rel(run)} (auto, {a.batch})")
         result = "promoted: the app now uses the new model"
@@ -457,8 +465,9 @@ def main():
                    help="AdamW learning rate; ~1/5 of the from-scratch rate (0.00167) to keep old knowledge")
     s.add_argument("--imgsz", type=int, default=640)
     s.add_argument("--batch", type=int, default=8)
-    s.add_argument("--device", default="cpu")
-    s.add_argument("--workers", type=int, default=4)
+    s.add_argument("--device", default=None, help="'0' (first GPU) or 'cpu'; default: GPU if available")
+    # 0: PyTorch DataLoader worker processes crash on Python 3.15 + torch 2.14 (Windows); the GPU still does the work
+    s.add_argument("--workers", type=int, default=0)
     s.set_defaults(fn=cmd_finetune)
 
     s = sub.add_parser("compare", help="live model vs a candidate run")

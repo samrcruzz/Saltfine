@@ -3,6 +3,11 @@
 # GPU (NVIDIA/CUDA) users: install PyTorch from the CUDA index FIRST, then this file:
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 #   pip install -r requirements.txt
+# Python 3.15: cu128 has no build yet; use cu130 (2.14.1+cu130 / torchvision 0.29.1+cu130 work on an RTX 3080):
+#   pip install torch==2.14.1+cu130 torchvision==0.29.1+cu130 --index-url https://download.pytorch.org/whl/cu130
+# With Windows Smart App Control ON, the CUDA build's c10.dll is blocked, and so is ANY freshly reinstalled
+# torch (even the same version that loaded before). GPU training needs Smart App Control off.
+# pipeline.py picks the GPU automatically when torch.cuda.is_available().
 # CPU-only / Raspberry Pi: just `pip install -r requirements.txt`.
 
 # YOLOv8 training & inference
