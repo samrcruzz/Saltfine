@@ -50,6 +50,15 @@ Saltfine/
 
 ## Quickstart
 
+### Run the website with one command
+From the **main folder** (`Saltfine`, not `backend` or `frontend`):
+```bash
+npm run setup   # once: installs the backend and frontend packages
+npm run dev     # starts the backend (port 5000) and frontend (port 5173) together
+```
+Then open **http://localhost:5173**. Press `Ctrl+C` once to stop both. If the website is already running,
+`npm run dev` says so instead of failing. You still need `backend/.env` and the ML service set up (steps below).
+
 ### 1. Setup ML Service
 ```bash
 cd ml_service
