@@ -30,11 +30,40 @@ export default function SaltImage({ record, className = '' }: SaltImageProps) {
   const label = `Captured image of salt for batch ${formatBatchId(record.batch_id)}, predicted grade ${record.predicted_grade}`
   const src = showOriginal && originalUrl ? originalUrl : highlightedUrl
 
+  // A record can outlive its photo file (deleted, or analyzed from another copy of the project that has its
+  // own backend/uploads), so show a clear note instead of the browser's broken-image icon.
+  // Tied to the src it belongs to, so switching photos starts at "loading" without a reset effect racing onLoad
+  const [load, setLoad] = useState<{ src: string | null; state: 'loaded' | 'error' }>({ src: null, state: 'loaded' })
+  const loadState = load.src === src ? load.state : 'loading'
+  const setLoadState = (state: 'loaded' | 'error') => setLoad({ src, state })
+
   return (
     <div className={`@container relative aspect-[3/2] overflow-hidden rounded-lg bg-navy-950 ${className}`}>
       {src ? (
         <>
-          <img src={src} alt={label} className="size-full object-contain" />
+          {loadState !== 'loaded' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center text-sm text-white/70">
+              {loadState === 'loading' ? (
+                <span className="text-xs">Loading photo…</span>
+              ) : (
+                <>
+                  <span className="font-semibold text-white/85">Photo not available</span>
+                  <span className="max-w-sm text-xs">
+                    The photo file is not in this computer's backend/uploads folder (it may have been analyzed from another
+                    copy of the project). The results for this record are still valid.
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+          <img
+            key={src}
+            src={src}
+            alt={label}
+            className={`size-full object-contain ${loadState === 'loaded' ? '' : 'invisible'}`}
+            onLoad={() => setLoadState('loaded')}
+            onError={() => setLoadState('error')}
+          />
           {originalUrl && (
             <div className="absolute right-3 top-3 flex overflow-hidden rounded border border-white/20 text-[0.68rem] font-semibold uppercase tracking-wider">
               <button
@@ -53,7 +82,7 @@ export default function SaltImage({ record, className = '' }: SaltImageProps) {
               </button>
             </div>
           )}
-          {originalUrl && !showOriginal && (
+          {originalUrl && !showOriginal && loadState === 'loaded' && (
             <div className="absolute bottom-3 left-3 flex gap-3 rounded bg-navy-950/75 px-2 py-1 text-[0.7rem] text-white">
               <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#00c800]" />Salt</span>
               <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#e60000]" />Impurity</span>
